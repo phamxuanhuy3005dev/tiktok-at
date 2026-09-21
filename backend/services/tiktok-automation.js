@@ -365,81 +365,64 @@ export async function dismissOnboardingModals(page, log) {
     }
 }
 
-export async function checkExistingScheduledTime(page, log, maxAttempts = 2) {
+export async function checkExistingScheduledTime(page, log) {
     const manageUrl = 'https://www.tiktok.com/tiktokstudio/content';
     log(`Checking for existing scheduled videos at ${manageUrl}...`);
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        try {
-            await page.goto(manageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            log(`Navigated to ${manageUrl} (attempt ${attempt}/${maxAttempts})`);
+    try {
+        await page.goto(manageUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        log(`Navigated to ${manageUrl}`);
 
-            await page.waitForTimeout(5000);
-            await dismissOnboardingModals(page, log);
+        // Wait smartly for content tabs or posts table to mount (max 6s)
+        await page.waitForSelector('button:has-text("Posts"), [role="tab"]:has-text("Posts"), [role="tablist"], [data-tt*="PostTable"], .post-table', { timeout: 6000 }).catch(() => null);
 
-            const tabSelectors = [
-                'button:has-text("Scheduled")',
-                'div[role="tab"]:has-text("Scheduled")',
-                'span:has-text("Scheduled")',
-                '[data-e2e="scheduled-tab"]'
-            ];
-            let scheduledTab = null;
-            for (const sel of tabSelectors) {
-                const tab = page.locator(sel).first();
-                if (await tab.isVisible({ timeout: 2000 }).catch(() => false)) {
-                    scheduledTab = tab;
-                    break;
-                }
-            }
+        await dismissOnboardingModals(page, log);
 
-            if (!scheduledTab) {
-                log(`"Scheduled" tab not found on content page (attempt ${attempt}/${maxAttempts}).`);
-                if (attempt < maxAttempts) {
-                    await page.waitForTimeout(3000);
-                    continue;
-                }
-                return null;
-            }
+        // Fast single-pass check for "Scheduled" tab (support English and Vietnamese)
+        const scheduledTab = page.locator('button:has-text("Scheduled"), [role="tab"]:has-text("Scheduled"), [data-e2e="scheduled-tab"], button:has-text("Đã lên lịch"), [role="tab"]:has-text("Đã lên lịch")').first();
 
-            await scheduledTab.click();
-            log(`Clicked "Scheduled" tab.`);
-            await page.waitForTimeout(3000);
+        const hasScheduledTab = await scheduledTab.isVisible({ timeout: 1500 }).catch(() => false);
 
-            const latestTime = await page.evaluate(() => {
-                const bodyText = document.body.innerText;
-                const matches = bodyText.match(/(?:Scheduled for|Scheduled:?)\s*([A-Za-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M|\d{4}-\d{2}-\d{2} \d{2}:\d{2})/g);
-                if (matches && matches.length > 0) {
-                    return matches[matches.length - 1];
-                }
-
-                const postTable = document.querySelector('[data-tt*="PostTable"], [class*="PostTable"]');
-                if (postTable) {
-                    const text = postTable.innerText;
-                    const dateMatch = text.match(/(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\s+\d{1,2}:\d{2})/);
-                    if (dateMatch) return dateMatch[1];
-                }
-                return null;
-            });
-
-            if (latestTime) {
-                log(`Found existing scheduled time string: "${latestTime}"`);
-                const parsed = new Date(latestTime.replace(/(?:Scheduled for|Scheduled:?)\s*/, ''));
-                if (!isNaN(parsed.getTime())) {
-                    log(`Parsed existing scheduled date: ${parsed.toISOString()}`);
-                    return parsed;
-                }
-            }
-
-            log(`No scheduled videos found in "Scheduled" tab.`);
+        if (!hasScheduledTab) {
+            log(`No "Scheduled" tab found on content page (0 scheduled posts on this account). Proceeding directly to upload.`);
             return null;
-        } catch (e) {
-            log(`Error checking scheduled videos (attempt ${attempt}/${maxAttempts}): ${e.message}`);
-            if (attempt < maxAttempts) {
-                await page.waitForTimeout(3000);
+        }
+
+        await scheduledTab.click();
+        log(`Clicked "Scheduled" tab.`);
+        await page.waitForTimeout(2000);
+
+        const latestTime = await page.evaluate(() => {
+            const bodyText = document.body.innerText;
+            const matches = bodyText.match(/(?:Scheduled for|Scheduled:?)\s*([A-Za-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M|\d{4}-\d{2}-\d{2} \d{2}:\d{2})/g);
+            if (matches && matches.length > 0) {
+                return matches[matches.length - 1];
+            }
+
+            const postTable = document.querySelector('[data-tt*="PostTable"], [class*="PostTable"]');
+            if (postTable) {
+                const text = postTable.innerText;
+                const dateMatch = text.match(/(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\s+\d{1,2}:\d{2})/);
+                if (dateMatch) return dateMatch[1];
+            }
+            return null;
+        });
+
+        if (latestTime) {
+            log(`Found existing scheduled time string: "${latestTime}"`);
+            const parsed = new Date(latestTime.replace(/(?:Scheduled for|Scheduled:?)\s*/, ''));
+            if (!isNaN(parsed.getTime())) {
+                log(`Parsed existing scheduled date: ${parsed.toISOString()}`);
+                return parsed;
             }
         }
+
+        log(`No scheduled videos found in "Scheduled" tab.`);
+        return null;
+    } catch (e) {
+        log(`Error checking scheduled videos: ${e.message}. Proceeding with default schedule.`);
+        return null;
     }
-    return null;
 }
 
 export async function uploadVideo(profile, videoFolder, videos, limitUploads = false, uploadLimitCount = 0, forceUploadAll = false) {
