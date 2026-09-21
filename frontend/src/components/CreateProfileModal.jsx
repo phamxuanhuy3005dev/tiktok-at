@@ -104,7 +104,7 @@ const CreateProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <FolderOpen size={14} />
-                  Group
+                  Nhóm Profile
                 </div>
                 <select
                   className="input"
@@ -113,7 +113,7 @@ const CreateProfileModal = ({
                   onChange={(e) => setNewProfileGroupId(e.target.value)}
                   disabled={busy}
                 >
-                  <option value="">No group</option>
+                  <option value="">Không thuộc nhóm nào</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}

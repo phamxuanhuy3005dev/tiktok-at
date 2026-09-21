@@ -63,24 +63,40 @@ export function listGroups(db) {
         }));
 }
 
-export function createGroup(db, { id, name }) {
-    if (!id || typeof id !== 'string' || id.trim() === '') {
-        throw httpError(400, 'Group id is required');
+export function createGroup(db, payload) {
+    let id;
+    let name;
+
+    if (typeof payload === 'string') {
+        name = payload;
+    } else if (payload && typeof payload === 'object') {
+        id = payload.id;
+        name = payload.name;
+    } else {
+        throw httpError(400, 'Group name is required');
     }
+
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+        id = 'grp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    } else {
+        id = id.trim();
+    }
+
     const trimmedName = normalizeGroupName(name);
     const existingName = db
         .prepare('SELECT id FROM groups WHERE LOWER(name) = LOWER(?)')
         .get(trimmedName);
     if (existingName) {
-        throw httpError(400, 'A group with this name already exists');
+        throw httpError(400, 'Group name already exists');
     }
     try {
         db.prepare(
             'INSERT INTO groups (id, name) VALUES (?, ?)'
-        ).run(id.trim(), trimmedName);
+        ).run(id, trimmedName);
+        return getGroupById(db, id);
     } catch (e) {
         if (e && e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-            throw httpError(400, 'A group with this name already exists');
+            throw httpError(400, 'Group name already exists');
         }
         if (e && e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
             throw httpError(400, 'A group with this id already exists');
@@ -89,36 +105,58 @@ export function createGroup(db, { id, name }) {
     }
 }
 
-export function renameGroup(db, { id, name }) {
-    assertGroupExists(db, id);
+export function renameGroup(db, arg2, arg3) {
+    let id;
+    let name;
+
+    if (arg2 && typeof arg2 === 'object') {
+        id = arg2.id;
+        name = arg2.name;
+    } else {
+        id = arg2;
+        name = arg3;
+    }
+
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+        throw httpError(400, 'Group id is required');
+    }
+
+    const trimmedId = id.trim();
+    assertGroupExists(db, trimmedId);
     const trimmedName = normalizeGroupName(name);
     const conflict = db
         .prepare(
             'SELECT id FROM groups WHERE LOWER(name) = LOWER(?) AND id != ?'
         )
-        .get(trimmedName, id);
+        .get(trimmedName, trimmedId);
     if (conflict) {
-        throw httpError(400, 'A group with this name already exists');
+        throw httpError(400, 'Group name already exists');
     }
     db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(
         trimmedName,
-        id
+        trimmedId
     );
+    return getGroupById(db, trimmedId);
 }
 
 export function deleteGroup(db, id) {
-    assertGroupExists(db, id);
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+        throw httpError(400, 'Group id is required');
+    }
+    const trimmedId = id.trim();
+    assertGroupExists(db, trimmedId);
     const row = db
         .prepare(
             'SELECT COUNT(*) AS n FROM profiles WHERE group_id = ?'
         )
-        .get(id);
+        .get(trimmedId);
     const n = Number(row.n);
     if (n > 0) {
         throw httpError(
-            409,
+            400,
             'Cannot delete group: it still has profiles assigned'
         );
     }
-    db.prepare('DELETE FROM groups WHERE id = ?').run(id);
+    db.prepare('DELETE FROM groups WHERE id = ?').run(trimmedId);
+    return { success: true };
 }

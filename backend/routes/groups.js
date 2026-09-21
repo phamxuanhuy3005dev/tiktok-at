@@ -20,11 +20,11 @@ router.get('/groups', (req, res) => {
 
 router.post('/groups', (req, res) => {
     try {
-        const { name } = req.body || {};
-        const group = createGroup(db, name);
+        const { id, name } = req.body || {};
+        const group = createGroup(db, { id, name });
         res.status(201).json(group);
     } catch (err) {
-        const status = err.message === 'Group name already exists' || err.message === 'Group name is required' ? 400 : 500;
+        const status = err.status || (err.message === 'Group name already exists' || err.message === 'Group name is required' ? 400 : 500);
         res.status(status).json({ error: err.message });
     }
 });
@@ -35,11 +35,11 @@ router.patch('/groups/:id', (req, res) => {
         const group = renameGroup(db, req.params.id, name);
         res.json(group);
     } catch (err) {
-        const status = err.message === 'Group name already exists' || err.message === 'Group name is required'
+        const status = err.status || (err.message === 'Group name already exists' || err.message === 'Group name is required'
             ? 400
             : err.message === 'Group not found'
                 ? 404
-                : 500;
+                : 500);
         res.status(status).json({ error: err.message });
     }
 });
@@ -49,11 +49,9 @@ router.delete('/groups/:id', (req, res) => {
         deleteGroup(db, req.params.id);
         res.json({ success: true });
     } catch (err) {
-        const status = err.message === 'Group not found'
+        const status = err.status || (err.message === 'Group not found'
             ? 404
-            : err.message === 'Cannot delete group that still contains profiles'
-                ? 400
-                : 500;
+            : 400);
         res.status(status).json({ error: err.message });
     }
 });

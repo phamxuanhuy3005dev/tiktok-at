@@ -17,9 +17,9 @@ const GroupsView = ({
   <section>
     <div className="page-header">
       <div>
-        <h2 className="page-title">Groups</h2>
+        <h2 className="page-title">Nhóm Profile</h2>
         <p className="page-subtitle" style={{ maxWidth: '640px', lineHeight: 1.5 }}>
-          Tạo và đổi tên nhóm để gom profile. Gán profile vào nhóm từ tab Profiles; xóa nhóm chỉ khi không còn profile gán.
+          Tạo và đổi tên nhóm để gom profile theo chủ đề hoặc kênh. Gán profile vào nhóm từ trang Quản lý Profile; chỉ được xóa nhóm khi không còn profile nào bên trong.
         </p>
       </div>
     </div>
@@ -28,7 +28,7 @@ const GroupsView = ({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
         <input
           className="input"
-          placeholder="Tên nhóm mới..."
+          placeholder="Nhập tên nhóm mới..."
           value={newGroupName}
           onChange={(e) => setNewGroupName(e.target.value)}
           style={{ flex: '1 1 220px', minWidth: '200px', padding: '10px 14px' }}
@@ -36,7 +36,7 @@ const GroupsView = ({
         />
         <button type="button" className="btn btn-primary" onClick={addGroup}>
           <Plus size={18} />
-          Create
+          Tạo nhóm
         </button>
       </div>
     </div>
@@ -53,8 +53,8 @@ const GroupsView = ({
         }}
       >
         <Users size={40} style={{ margin: '0 auto 16px', opacity: 0.35 }} />
-        <p style={{ color: 'var(--text)', fontWeight: '600', marginBottom: '8px' }}>Chưa có nhóm</p>
-        <p style={{ fontSize: '0.9rem' }}>Nhập tên và bấm Create để thêm nhóm đầu tiên.</p>
+        <p style={{ color: 'var(--text)', fontWeight: '600', marginBottom: '8px' }}>Chưa có nhóm nào</p>
+        <p style={{ fontSize: '0.9rem' }}>Nhập tên và bấm "Tạo nhóm" để thêm nhóm đầu tiên.</p>
       </div>
     ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -77,7 +77,8 @@ const GroupsView = ({
                   type="button"
                   className="icon-btn icon-btn--success"
                   onClick={() => updateGroupName(g.id, editingGroupValue)}
-                  aria-label="Save name"
+                  data-tooltip="Lưu tên mới"
+                  aria-label="Lưu tên mới"
                 >
                   <Check size={18} />
                 </button>
@@ -85,7 +86,8 @@ const GroupsView = ({
                   type="button"
                   className="icon-btn icon-btn--danger"
                   onClick={() => setEditingGroupId(null)}
-                  aria-label="Cancel rename"
+                  data-tooltip="Hủy bỏ"
+                  aria-label="Hủy bỏ"
                 >
                   <X size={18} />
                 </button>
@@ -94,7 +96,7 @@ const GroupsView = ({
               <>
                 <span className="group-name">{g.name}</span>
                 <span className="group-count">
-                  {g.profile_count ?? 0} profile{g.profile_count === 1 ? '' : 's'}
+                  {g.profile_count ?? 0} profile
                 </span>
                 <button
                   type="button"
@@ -103,7 +105,8 @@ const GroupsView = ({
                     setEditingGroupId(g.id);
                     setEditingGroupValue(g.name);
                   }}
-                  aria-label="Rename group"
+                  data-tooltip="Đổi tên nhóm"
+                  aria-label="Đổi tên nhóm"
                 >
                   <Edit3 size={18} />
                 </button>
@@ -111,7 +114,8 @@ const GroupsView = ({
                   type="button"
                   className="icon-btn icon-btn--danger"
                   onClick={() => deleteGroup(g.id)}
-                  aria-label="Delete group"
+                  data-tooltip="Xóa nhóm"
+                  aria-label="Xóa nhóm"
                 >
                   <Trash2 size={18} />
                 </button>

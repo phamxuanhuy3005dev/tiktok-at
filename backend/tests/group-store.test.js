@@ -79,3 +79,25 @@ test('deleteGroup blocks removal when profiles still reference the group', () =>
         /still has profiles/i
     );
 });
+
+test('createGroup auto-generates id when id is omitted or payload is string', () => {
+    const db = makeDb();
+
+    const g1 = createGroup(db, { name: 'Marketing' });
+    assert.ok(g1.id && g1.id.startsWith('grp_'));
+    assert.equal(g1.name, 'Marketing');
+
+    const g2 = createGroup(db, 'Sales');
+    assert.ok(g2.id && g2.id.startsWith('grp_'));
+    assert.equal(g2.name, 'Sales');
+});
+
+test('renameGroup works with positional arguments and returns updated record', () => {
+    const db = makeDb();
+
+    const g = createGroup(db, { id: 'g-1', name: 'Old Name' });
+    const updated = renameGroup(db, 'g-1', 'New Name');
+
+    assert.equal(updated.id, 'g-1');
+    assert.equal(updated.name, 'New Name');
+});

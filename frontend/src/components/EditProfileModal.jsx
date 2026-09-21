@@ -86,7 +86,7 @@ const EditProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <FolderOpen size={14} />
-                  Group
+                  Nhóm Profile
                 </div>
                 <select
                   className="input"
@@ -97,7 +97,7 @@ const EditProfileModal = ({
                     onUpdateGroup(profile.id, v === '' ? null : v);
                   }}
                 >
-                  <option value="">No group</option>
+                  <option value="">Không thuộc nhóm nào</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}

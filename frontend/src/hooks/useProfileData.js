@@ -90,9 +90,10 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       await axios.post('/api/groups', { name });
       setNewGroupName('');
       await fetchData();
-      setMessage({ type: 'success', text: 'Group created successfully' });
+      setMessage({ type: 'success', text: 'Tạo nhóm thành công' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to create group' });
+      const errText = err.response?.data?.error || 'Không thể tạo nhóm';
+      setMessage({ type: 'error', text: errText });
     }
   };
 
@@ -105,22 +106,24 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       await axios.patch(`/api/groups/${id}`, { name: newName.trim() });
       setEditingGroupId(null);
       await fetchData();
-      setMessage({ type: 'success', text: 'Group renamed successfully' });
+      setMessage({ type: 'success', text: 'Đổi tên nhóm thành công' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to rename group' });
+      const errText = err.response?.data?.error || 'Không thể đổi tên nhóm';
+      setMessage({ type: 'error', text: errText });
       setEditingGroupId(null);
     }
   };
 
   const deleteGroup = async (id) => {
-    if (!window.confirm('Delete this group? It must have no profiles assigned.')) return;
+    if (!window.confirm('Bạn có chắc muốn xóa nhóm này? Nhóm phải không còn profile nào gán bên trong.')) return;
     try {
       await axios.delete(`/api/groups/${id}`);
       if (groupFilter === id) setGroupFilter('all');
       await fetchData();
-      setMessage({ type: 'success', text: 'Group deleted' });
+      setMessage({ type: 'success', text: 'Đã xóa nhóm thành công' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to delete group' });
+      const errText = err.response?.data?.error || 'Không thể xóa nhóm';
+      setMessage({ type: 'error', text: errText });
     }
   };
 
@@ -128,14 +131,15 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     try {
       await axios.patch(`/api/profiles/${profileId}`, { group_id: groupId });
       await fetchData();
-      setMessage({ type: 'success', text: 'Profile group updated' });
+      setMessage({ type: 'success', text: 'Đã cập nhật nhóm cho profile' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update profile group' });
+      const errText = err.response?.data?.error || 'Không thể cập nhật nhóm cho profile';
+      setMessage({ type: 'error', text: errText });
     }
   };
 
   const deleteProfile = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this profile?')) return;
+    if (!window.confirm('Bạn có chắc muốn xóa profile này? Dữ liệu profile sẽ được đưa vào thùng rác.')) return;
     try {
       await axios.delete(`/api/profiles/${id}`);
       fetchData();
