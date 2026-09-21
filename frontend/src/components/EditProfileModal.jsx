@@ -8,7 +8,7 @@ import {
   Video,
   X
 } from 'lucide-react';
-import { getStatusColor } from '../status';
+import { getStatusColor, getStatusLabel } from '../status';
 
 const EditProfileModal = ({
   isOpen,
@@ -70,7 +70,7 @@ const EditProfileModal = ({
                 type="button"
                 onClick={onClose}
                 className="modal-close"
-                aria-label="Close edit profile modal"
+                aria-label="Đóng cửa sổ chỉnh sửa profile"
               >
                 <X size={18} />
               </button>
@@ -108,13 +108,13 @@ const EditProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <Video size={14} />
-                  Upload Folder
+                  Thư mục Video của Profile
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     className="input"
                     style={{ fontSize: '0.75rem', padding: '8px 12px', flex: 1 }}
-                    placeholder="Global Default"
+                    placeholder="Mặc định hệ thống"
                     value={profile.video_folder || ''}
                     onChange={(e) => onUpdateFolder(profile.id, e.target.value)}
                   />
@@ -132,7 +132,7 @@ const EditProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <Search size={14} />
-                  Favorite Music (Nhập nhiều bài cách nhau bằng dấu phẩy ",")
+                  Nhạc Yêu Thích (Nhập nhiều bài cách nhau bằng dấu phẩy ",")
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <textarea
@@ -274,15 +274,16 @@ const EditProfileModal = ({
                   color: getStatusColor(profile.status),
                   textTransform: 'uppercase'
                 }}>
-                  {profile.status}
+                  {getStatusLabel(profile.status)}
                 </span>
               </div>
               <button
+                type="button"
                 className="btn btn-secondary"
                 onClick={onClose}
                 style={{ padding: '8px 20px' }}
               >
-                Close
+                Đóng
               </button>
             </div>
           </motion.div>

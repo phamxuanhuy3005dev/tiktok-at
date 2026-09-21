@@ -154,5 +154,39 @@ Dọn dẹp toàn bộ dữ liệu tạm và bộ nhớ đệm của các profil
 Lấy toàn bộ cấu hình hệ thống (đường dẫn video mặc định, v.v.).
 
 ### `POST /api/config`
-Lưu cấu hình hệ thống.
-- **Request Body**: `{ "key": "value" }`
+Lưu cấu hình hệ thống (thư mục video mặc định, số luồng song song).
+- **Request Body**: `{ "videoFolder": "/path/to/videos", "maxConcurrency": 4 }`
+- **Response `200 OK`**: `{ "success": true }`
+
+---
+
+## 5. Groups API (`/api/groups`)
+
+### `GET /api/groups`
+Lấy danh sách tất cả các nhóm kèm số lượng profile được gán vào mỗi nhóm.
+- **Response `200 OK`**:
+  ```json
+  [
+    {
+      "id": "grp_1789996681_ab12c",
+      "name": "Kênh Giải Trí",
+      "created_at": "2026-09-21 22:30:00",
+      "profile_count": 3
+    }
+  ]
+  ```
+
+### `POST /api/groups`
+Tạo nhóm mới. Nếu không truyền `id`, backend tự động sinh ID duy nhất chuẩn `grp_${timestamp}_${hash}`.
+- **Request Body**: `{ "name": "Kênh Thương Mại Điện Tử" }`
+- **Response `201 Created`**: Trả về object nhóm vừa được tạo.
+
+### `PATCH /api/groups/:id`
+Đổi tên nhóm.
+- **Request Body**: `{ "name": "Tên nhóm mới" }`
+- **Response `200 OK`**: Trả về object nhóm đã cập nhật.
+
+### `DELETE /api/groups/:id`
+Xóa nhóm khỏi hệ thống. Thao tác này sẽ bị chặn an toàn và trả về `400 Bad Request` nếu nhóm vẫn còn ít nhất 1 profile được gán.
+- **Response `200 OK`**: `{ "success": true }`
+

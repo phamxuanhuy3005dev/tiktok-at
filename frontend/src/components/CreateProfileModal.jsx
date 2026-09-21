@@ -68,7 +68,7 @@ const CreateProfileModal = ({
                 onClick={() => closeCreateProfileModal()}
                 disabled={busy}
                 className="modal-close"
-                aria-label="Close create profile modal"
+                aria-label="Đóng cửa sổ tạo profile"
               >
                 <X size={18} />
               </button>
@@ -126,13 +126,13 @@ const CreateProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <Video size={14} />
-                  Upload Folder
+                  Thư mục Video của Profile
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     className="input"
                     style={{ fontSize: '0.75rem', padding: '8px 12px', flex: 1 }}
-                    placeholder="Global Default (/path/to/videos)"
+                    placeholder="Mặc định hệ thống (/path/to/videos)"
                     value={newProfileVideoFolder}
                     onChange={(e) => setNewProfileVideoFolder(e.target.value)}
                     disabled={busy}
@@ -157,7 +157,7 @@ const CreateProfileModal = ({
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
                   <Search size={14} />
-                  Favorite Music (Nhập nhiều bài cách nhau bằng dấu phẩy ",")
+                  Nhạc Yêu Thích (Nhập nhiều bài cách nhau bằng dấu phẩy ",")
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <textarea
@@ -300,7 +300,7 @@ const CreateProfileModal = ({
                 disabled={busy}
                 style={{ padding: '8px 20px' }}
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 type="button"
@@ -309,7 +309,7 @@ const CreateProfileModal = ({
                 disabled={busy || !newProfileName.trim()}
                 style={{ padding: '8px 20px' }}
               >
-                {isCreatingProfile ? 'Creating...' : 'Create Profile'}
+                {isCreatingProfile ? 'Đang tạo...' : 'Tạo Profile'}
               </button>
             </div>
           </motion.div>

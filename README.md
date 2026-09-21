@@ -194,7 +194,7 @@ Toàn bộ logic cốt lõi (xử lý lịch đăng, validation profile, browser
 cd backend
 npm test
 ```
-*Kết quả kiểm thử: 25/25 tests passing (0 failures).*
+*Kết quả kiểm thử: 32/32 tests passing (100% pass, 0 failures).*
 
 ---
 

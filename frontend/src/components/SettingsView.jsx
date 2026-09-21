@@ -1,7 +1,13 @@
 import React from 'react';
-import { Video, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Video, AlertCircle, ShieldCheck, FolderOpen, RefreshCw } from 'lucide-react';
 
-const SettingsView = ({ config, setConfig, updateConfig }) => {
+const SettingsView = ({
+  config,
+  setConfig,
+  updateConfig,
+  isSaving = false,
+  onSelectFolder
+}) => {
   return (
     <section>
       <div className="page-header">
@@ -18,14 +24,28 @@ const SettingsView = ({ config, setConfig, updateConfig }) => {
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600' }}>
               Thư mục Video Mặc định
             </label>
-            <div className="input-with-icon">
-              <Video size={18} />
-              <input
-                className="input"
-                value={config.videoFolder || ''}
-                onChange={(e) => setConfig({ ...config, videoFolder: e.target.value })}
-                placeholder="/Users/username/Desktop/tiktok-at/uploads"
-              />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="input-with-icon" style={{ flex: 1 }}>
+                <Video size={18} />
+                <input
+                  className="input"
+                  value={config.videoFolder || ''}
+                  onChange={(e) => setConfig({ ...config, videoFolder: e.target.value })}
+                  placeholder="/Users/username/Desktop/tiktok-at/uploads"
+                />
+              </div>
+              {onSelectFolder && (
+                <button
+                  type="button"
+                  onClick={onSelectFolder}
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', flexShrink: 0 }}
+                  title="Chọn thư mục video trên máy tính"
+                >
+                  <FolderOpen size={16} />
+                  <span>Chọn thư mục</span>
+                </button>
+              )}
             </div>
             <p className="input-hint">
               Đường dẫn thư mục chứa video (.mp4, .mov) khi profile không chọn thư mục riêng.
@@ -56,11 +76,14 @@ const SettingsView = ({ config, setConfig, updateConfig }) => {
           </div>
 
           <button
+            type="button"
             className="btn btn-primary btn-block"
-            style={{ marginTop: '16px' }}
+            style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={updateConfig}
+            disabled={isSaving}
           >
-            Lưu Thay Đổi
+            {isSaving ? <RefreshCw size={18} className="animate-spin" /> : null}
+            <span>{isSaving ? 'Đang lưu thay đổi...' : 'Lưu Thay Đổi'}</span>
           </button>
         </div>
       </div>

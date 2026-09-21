@@ -49,6 +49,8 @@ const App = () => {
               config={ui.config}
               setConfig={ui.setConfig}
               updateConfig={ui.updateConfig}
+              isSaving={ui.isSavingConfig}
+              onSelectFolder={ui.handleSelectFolderForDefaultConfig}
             />
           )}
         </main>

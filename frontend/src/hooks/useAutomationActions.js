@@ -139,11 +139,11 @@ export const useAutomationActions = ({
       await axios.post('/api/login-tiktok', { profileId });
       setLoggingInProfiles((prev) => new Set([...prev, profileId]));
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Login TikTok started! Browser will open shortly.' });
+        setMessage({ type: 'success', text: 'Đã bắt đầu đăng nhập TikTok! Trình duyệt sẽ mở ngay.' });
       }
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to start login' });
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể bắt đầu đăng nhập' });
       }
     }
   }, [setMessage]);
@@ -157,11 +157,11 @@ export const useAutomationActions = ({
         return next;
       });
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Login session stopping...' });
+        setMessage({ type: 'success', text: 'Đang dừng phiên đăng nhập...' });
       }
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to stop login' });
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể dừng phiên đăng nhập' });
       }
     }
   }, [setMessage]);
@@ -209,7 +209,7 @@ export const useAutomationActions = ({
   const handleAddFavoriteMusic = useCallback(async (profileId, searchTerm) => {
     if (!searchTerm || !searchTerm.trim()) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: 'Please enter a search term' });
+        setMessage({ type: 'error', text: 'Vui lòng nhập từ khóa tìm kiếm bài hát' });
       }
       return;
     }
@@ -217,7 +217,7 @@ export const useAutomationActions = ({
       setAddingFavoriteMusicProfiles((prev) => new Set([...prev, profileId]));
       await axios.post('/api/add-favorite-music', { profileId, searchTerm: searchTerm.trim() });
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Adding favorite music! Browser will open shortly.' });
+        setMessage({ type: 'success', text: 'Đang thêm nhạc yêu thích! Trình duyệt sẽ mở ngay.' });
       }
     } catch (err) {
       setAddingFavoriteMusicProfiles((prev) => {
@@ -226,7 +226,7 @@ export const useAutomationActions = ({
         return next;
       });
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to add favorite music' });
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể thêm nhạc yêu thích' });
       }
     }
   }, [setMessage]);

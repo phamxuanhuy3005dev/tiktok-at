@@ -68,3 +68,14 @@ Tài liệu tổng hợp các tình huống thường gặp khi vận hành hệ
   1. **Tự động đóng tiến trình**: Khi người dùng đóng cửa sổ (dù trên macOS hay Windows), hệ thống tự động nhận biết không còn tab nào mở, lưu cookie và thoát hẳn tiến trình Chromium, gỡ bỏ lock file.
   2. **Tự động giải phóng trước khi chạy**: Trước khi bất kỳ tác vụ tự động nào chạy, hệ thống sẽ tự động đóng các phiên mở tay, thu dọn lock file và tiến trình rác của profile đó.
   3. **Đổi trạng thái trên giao diện**: Icon Mở profile trên web đổi sang màu xanh lục khi trình duyệt đang mở; bạn có thể bấm trực tiếp vào icon để đóng ngay lập tức.
+
+---
+
+## 5. Vấn Đề Về Quản Lý Nhóm (Groups)
+
+### ❓ Triệu chứng: Báo lỗi "Không thể xóa nhóm: vẫn còn profile trong nhóm này"
+- **Nguyên nhân**: Nhóm vẫn còn các profile đang gán vào. Để bảo vệ tính toàn vẹn của dữ liệu và tránh mất phân loại của profile, hệ thống chặn an toàn không cho xóa nhóm nếu số lượng profile > 0.
+- **Cách xử lý**:
+  1. Vào tab **Quản lý Profile**.
+  2. Lọc theo nhóm đó, bấm nút Chỉnh sửa trên từng profile và chuyển mục **Nhóm Profile** sang nhóm khác hoặc **"Không thuộc nhóm nào"**.
+  3. Quay lại tab **Nhóm Profile** và bấm nút xóa nhóm (icon thùng rác). Nhóm sẽ được xóa thành công.

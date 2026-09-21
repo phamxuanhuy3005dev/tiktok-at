@@ -38,11 +38,25 @@ export const useFolderPicker = ({ updateProfileFolder, setNewProfileVideoFolder 
     }
   }, [selectFolderPath, setNewProfileVideoFolder]);
 
+  const handleSelectFolderForConfig = useCallback(async (onSelect) => {
+    setIsSelectingFolder(true);
+    try {
+      const selectedPath = await selectFolderPath();
+      if (selectedPath && typeof onSelect === 'function') {
+        onSelect(selectedPath);
+      }
+    } finally {
+      setIsSelectingFolder(false);
+    }
+  }, [selectFolderPath]);
+
   return {
     isSelectingFolder,
     setIsSelectingFolder,
+    selectFolderPath,
     handleSelectFolder,
-    handleSelectFolderForCreateProfile
+    handleSelectFolderForCreateProfile,
+    handleSelectFolderForConfig
   };
 };
 

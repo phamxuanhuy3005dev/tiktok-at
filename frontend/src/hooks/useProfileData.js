@@ -9,6 +9,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
   const [groupFilter, setGroupFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('profiles');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [batchStatus, setBatchStatus] = useState(null);
 
   const [editingId, setEditingId] = useState(null);
@@ -170,11 +171,15 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
   };
 
   const updateConfig = async () => {
+    setIsSavingConfig(true);
     try {
       await axios.post('/api/config', config);
-      setMessage({ type: 'success', text: 'Settings updated' });
+      setMessage({ type: 'success', text: 'Đã lưu cấu hình hệ thống thành công!' });
     } catch (err) {
-      console.error(err);
+      console.error('Error updating config:', err);
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Lỗi khi lưu cấu hình hệ thống' });
+    } finally {
+      setIsSavingConfig(false);
     }
   };
 
@@ -205,9 +210,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       await axios.patch(`/api/profiles/${id}`, { name: newName });
       setEditingId(null);
       fetchData();
-      setMessage({ type: 'success', text: 'Profile renamed successfully' });
+      setMessage({ type: 'success', text: 'Đã đổi tên profile thành công' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to rename profile' });
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể đổi tên profile' });
       setEditingId(null);
     }
   };
@@ -310,7 +315,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
   const clearTrash = async (targetSet) => {
     const target = targetSet || selectedForRun;
     if (!target || target.size === 0) {
-      setMessage({ type: 'error', text: 'Chọn ít nhất một profile để Clear Trash.' });
+      setMessage({ type: 'error', text: 'Vui lòng chọn ít nhất một profile để dọn dẹp rác.' });
       return;
     }
     const profileIds = [...target];
@@ -367,6 +372,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     setMessage,
     isLoading,
     setIsLoading,
+    isSavingConfig,
     batchStatus,
     setBatchStatus,
     dismissBatchStatus,

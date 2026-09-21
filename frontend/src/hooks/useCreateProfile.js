@@ -56,11 +56,11 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
         await fetchData();
       }
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Profile added successfully' });
+        setMessage({ type: 'success', text: 'Tạo profile thành công' });
       }
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to add profile' });
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể tạo profile' });
       }
     } finally {
       setIsCreatingProfile(false);

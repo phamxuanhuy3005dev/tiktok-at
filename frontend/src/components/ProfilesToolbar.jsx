@@ -69,8 +69,8 @@ const ProfilesToolbar = ({
           disabled={!hasSelection}
           title={
             hasSelection
-              ? 'Clear Trash - dọn cache/rác của profile đã chọn'
-              : 'Tick checkbox trên từng profile cần dọn rác'
+              ? 'Dọn dẹp rác - giải phóng cache/dữ liệu tạm của profile đã chọn'
+              : 'Chọn checkbox trên từng profile cần dọn rác'
           }
           color="var(--status-warn)"
           bg="rgba(245, 158, 11, 0.08)"

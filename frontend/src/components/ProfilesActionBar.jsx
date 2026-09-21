@@ -61,7 +61,7 @@ const ProfilesActionBar = ({
           className="btn-delete-bulk"
           onClick={() => deleteSelectedProfiles(selectedForRun)}
           disabled={!hasSelection}
-          title={hasSelection ? `Xóa ${selectedForRun.size} profile đã chọn` : 'Tick checkbox trên từng profile cần xóa'}
+          title={hasSelection ? `Xóa ${selectedForRun.size} profile đã chọn` : 'Chọn checkbox trên từng profile cần xóa'}
         >
           <Trash2 size={15} aria-hidden="true" />
           <span>Xóa đã chọn</span>
@@ -72,7 +72,7 @@ const ProfilesActionBar = ({
           className="btn-run"
           onClick={() => startAutomation()}
           disabled={isLoading || !hasSelection}
-          title={hasSelection ? undefined : 'Tick checkbox trên từng profile cần upload'}
+          title={hasSelection ? undefined : 'Chọn checkbox trên từng profile cần upload'}
         >
           {isLoading ? (
             <RefreshCw className="animate-spin" size={15} aria-hidden="true" />

@@ -214,7 +214,7 @@ const CookieModal = ({
                 type="button"
                 onClick={onClose}
                 className="modal-close"
-                aria-label="Close cookie modal"
+                aria-label="Đóng cửa sổ cookie"
               >
                 <X size={18} />
               </button>

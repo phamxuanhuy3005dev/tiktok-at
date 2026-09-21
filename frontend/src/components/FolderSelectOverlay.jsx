@@ -35,9 +35,9 @@ const FolderSelectOverlay = ({ visible }) => (
               <FolderOpen size={32} color="var(--primary)" />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '8px' }}>Select Folder...</h3>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '8px' }}>Đang chọn thư mục...</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Please select a folder in the native dialog that appeared.
+            Vui lòng chọn thư mục trên cửa sổ hệ thống vừa xuất hiện.
           </p>
         </div>
       </motion.div>

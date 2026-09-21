@@ -113,8 +113,17 @@ const useProfiles = () => {
   const {
     isSelectingFolder,
     handleSelectFolder,
-    handleSelectFolderForCreateProfile
+    handleSelectFolderForCreateProfile,
+    handleSelectFolderForConfig
   } = folderPicker;
+
+  const handleSelectFolderForDefaultConfig = () => {
+    return handleSelectFolderForConfig((selectedPath) => {
+      if (selectedPath) {
+        setConfig((prev) => ({ ...prev, videoFolder: selectedPath }));
+      }
+    });
+  };
 
   // 5. Create profile modal
   const createProfile = useCreateProfile({
@@ -260,6 +269,8 @@ const useProfiles = () => {
     deleteProfile,
     deleteSelectedProfiles: handleDeleteSelectedProfiles,
     updateConfig,
+    isSavingConfig: profileData.isSavingConfig,
+    handleSelectFolderForDefaultConfig,
     startAutomation,
     toggleProfileSelectedForRun,
     toggleSelectAllFiltered,

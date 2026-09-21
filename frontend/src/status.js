@@ -28,3 +28,6 @@ export const getStatusColor = (status = 'idle') => {
 
 // Backwards-compatible alias.
 export const statusColor = getStatusColor;
+
+export const getStatusLabel = (status = 'idle') => STATUS_LABELS[status] || status || 'Sẵn sàng';
+
