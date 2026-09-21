@@ -99,14 +99,43 @@ Mở trình duyệt Google Chrome với profile biệt lập để người dùn
 ### `POST /api/close-profile`
 Đóng cửa sổ trình duyệt thủ công đang mở của profile.
 - **Request Body**: `{ "profileId": "1789996681591_xasu52" }`
-
-### `POST /api/warmup-profile`
-Kích hoạt chu trình tương tác tự động (xem video, lướt feed ngẫu nhiên).
-- **Request Body**: `{ "profileId": "...", "durationMinutes": 10 }`
+- **Response `200 OK`**: `{ "status": "closed", "profile": "devyfunkk" }`
 
 ---
 
-## 3. System & Config API (`/api/system` & `/api/config`)
+## 3. Cookie Management API (`/api/profiles`)
+
+### `POST /api/profiles/import-cookies-json`
+Nhập mảng cookie JSON để cập nhật hàng loạt hoặc tự động tạo profile mới (mặc định bật Lên lịch nối tiếp 10 phút).
+- **Request Body**:
+  ```json
+  [
+    {
+      "name": "channel_01",
+      "cookies": [...]
+    }
+  ]
+  ```
+- **Response `200 OK`**: `{ "success": true, "updated": 1, "created": 1 }`
+
+### `POST /api/profiles/export-cookies-json`
+Xuất toàn bộ cookie của các profile đã chọn ra file JSON để sao lưu hoặc chuyển đổi thiết bị.
+- **Request Body**: `{ "profileIds": ["id1", "id2"] }` (hoặc rỗng để xuất tất cả)
+- **Response `200 OK`**: Mảng JSON chứa thông tin và cookies của các profile.
+
+### `POST /api/profiles/:id/cookies`
+Lưu dữ liệu cookie trực tiếp (định dạng chuỗi hoặc mảng JSON) cho profile.
+- **Request Body**: `{ "cookies": "[{\"name\":\"sessionid\",...}]" }`
+
+### `POST /api/profiles/:id/capture-cookies`
+Đồng bộ nhanh cookie hiện tại từ phiên trình duyệt đang mở hoặc file lưu trữ của Chrome trên đĩa.
+
+### `POST /api/profiles/:id/logout`
+Đăng xuất tài khoản, đóng trình duyệt và xóa sạch cookies của profile.
+
+---
+
+## 4. System & Config API (`/api/system` & `/api/config`)
 
 ### `GET /api/system/stats`
 Lấy thông tin tài nguyên hệ thống (RAM sử dụng, dung lượng cache).

@@ -57,7 +57,7 @@ router.patch('/profiles/:id', (req, res) => {
             'channel_ids', 'last_run', 'remove_title', 'set_music',
             'need_content_check', 'auto_increment_schedule', 'schedule_interval',
             'upload_count', 'cookies', 'music_search', 'account_id', 'pass',
-            'email', 'pass_email', 'use_fingerprint', 'fingerprint'
+            'email', 'pass_email'
         ];
 
         const updates = [];
@@ -68,7 +68,7 @@ router.patch('/profiles/:id', (req, res) => {
                 let val = req.body[key];
                 if (key === 'group_id') {
                     val = normalizeGroupId(val);
-                } else if (['is_scheduled', 'remove_title', 'set_music', 'need_content_check', 'auto_increment_schedule', 'use_fingerprint'].includes(key)) {
+                } else if (['is_scheduled', 'remove_title', 'set_music', 'need_content_check', 'auto_increment_schedule'].includes(key)) {
                     val = val ? 1 : 0;
                 } else if (['schedule_interval', 'upload_count'].includes(key)) {
                     val = parseInt(val, 10) || 0;
@@ -100,7 +100,7 @@ router.put('/profiles/:id', (req, res) => {
             name, group_id, video_folder, channel_ids, is_scheduled,
             remove_title, set_music, need_content_check, auto_increment_schedule,
             schedule_interval, upload_count, cookies, music_search, account_id,
-            pass, email, pass_email, use_fingerprint, fingerprint
+            pass, email, pass_email
         } = req.body;
 
         db.prepare(`
@@ -121,9 +121,7 @@ router.put('/profiles/:id', (req, res) => {
                 account_id = COALESCE(?, account_id),
                 pass = COALESCE(?, pass),
                 email = COALESCE(?, email),
-                pass_email = COALESCE(?, pass_email),
-                use_fingerprint = COALESCE(?, use_fingerprint),
-                fingerprint = COALESCE(?, fingerprint)
+                pass_email = COALESCE(?, pass_email)
             WHERE id = ?
         `).run(
             name,
@@ -143,8 +141,6 @@ router.put('/profiles/:id', (req, res) => {
             pass,
             email,
             pass_email,
-            use_fingerprint !== undefined ? (use_fingerprint ? 1 : 0) : null,
-            fingerprint,
             req.params.id
         );
 

@@ -25,8 +25,6 @@ const EditProfileModal = ({
   onUpdateUploadCount,
   onUpdateRemoveTitle,
   onUpdateNeedContentCheck,
-  onUpdateUseFingerprint,
-  onResetFingerprint,
   musicSearchTerm,
   onUpdateMusicSearchTerm
 }) => {
@@ -65,7 +63,7 @@ const EditProfileModal = ({
             {/* Header */}
             <div className="modal-header">
               <div>
-                <h3 className="modal-title">Edit Profile</h3>
+                <h3 className="modal-title">Chỉnh Sửa Profile</h3>
                 <p className="modal-subtitle">{profile.name}</p>
               </div>
               <button

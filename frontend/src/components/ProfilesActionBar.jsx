@@ -22,15 +22,15 @@ const ProfilesActionBar = ({
     <>
       <div className="dash-filter">
         <label className="field-label">
-          Group
+          Nhóm
           <select
             className="input input-compact"
             style={{ minWidth: '180px' }}
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
           >
-            <option value="all">All Groups</option>
-            <option value="ungrouped">Ungrouped</option>
+            <option value="all">Tất cả nhóm</option>
+            <option value="ungrouped">Chưa phân nhóm</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>{g.name}</option>
             ))}

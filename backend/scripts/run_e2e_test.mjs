@@ -7,7 +7,8 @@ import { uploadVideo } from '../services/tiktok-automation.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ARTIFACTS_DIR = '/Users/fanboyrose/.gemini/antigravity/brain/1a4f6032-9d30-4f47-9fbc-3e6029bf9be6';
+const ARTIFACTS_DIR = process.env.TIKTOK_SCREENSHOT_DIR || path.join(__dirname, '../../debug_screenshots');
+if (!fs.existsSync(ARTIFACTS_DIR)) fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 process.env.TIKTOK_SCREENSHOT_DIR = ARTIFACTS_DIR;
 
 const db = sqlite3(path.join(__dirname, '../../data/tiktok.db'));

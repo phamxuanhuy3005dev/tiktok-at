@@ -46,7 +46,7 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
         video_folder: newProfileVideoFolder.trim() || null,
         music_search: newProfileMusicSearch.trim() || null,
         auto_increment_schedule: newProfileAutoIncrementSchedule ? 1 : 0,
-        schedule_interval: newProfileScheduleInterval || 5,
+        schedule_interval: newProfileScheduleInterval || 10,
         remove_title: newProfileRemoveTitle ? 1 : 0,
         set_music: newProfileSetMusic ? 1 : 0,
         need_content_check: newProfileNeedContentCheck ? 1 : 0

@@ -45,8 +45,6 @@ db.exec(`
         set_music INTEGER DEFAULT 1,
         need_content_check INTEGER DEFAULT 0,
         channel_ids TEXT,
-        fingerprint TEXT,
-        use_fingerprint INTEGER DEFAULT 1,
         music_search TEXT,
         cookies TEXT,
         account_id TEXT,
@@ -85,10 +83,10 @@ try {
         }
     }
 
-    // Drop only unused legacy columns (proxy, render, avatar)
+    // Drop only unused legacy columns (proxy, render, avatar, fingerprint)
     const unusedCols = [
         'proxy', 'use_proxy', 'needs_render', 'render_concat_video',
-        'render_video_long', 'avatar_image'
+        'render_video_long', 'avatar_image', 'fingerprint', 'use_fingerprint'
     ];
     for (const col of unusedCols) {
         if (existingCols.has(col)) {

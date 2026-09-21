@@ -4,6 +4,8 @@ import path from 'path';
 import { db, PROFILES_DIR } from '../db.js';
 import { parseCookies, captureBrowserCookies, extractCookiesFromDisk } from '../services/cookie-service.js';
 import { manualBrowsers } from '../services/tracker.js';
+import { createProfileRecord } from '../profile-store.js';
+import { closeProfileBrowser } from '../services/browser-manager.js';
 
 const router = express.Router();
 
@@ -14,12 +16,7 @@ router.post('/profiles/:id/logout', async (req, res) => {
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
 
     try {
-        if (manualBrowsers.has(profileId)) {
-            const browser = manualBrowsers.get(profileId);
-            manualBrowsers.delete(profileId);
-            await browser.close().catch(() => null);
-        }
-
+        await closeProfileBrowser(profile.id, profile.name);
         db.prepare('UPDATE profiles SET cookies = NULL, status = ? WHERE id = ?').run('idle', profileId);
 
         const userDataDir = path.join(PROFILES_DIR, profile.name);
@@ -227,10 +224,6 @@ router.post('/profiles/import-cookies-json', (req, res) => {
         const byName = new Map(existingProfiles.map(p => [p.name.toLowerCase(), p]));
 
         const updateCookieStmt = db.prepare('UPDATE profiles SET cookies = ? WHERE id = ?');
-        const insertProfileStmt = db.prepare(`
-            INSERT INTO profiles (id, name, status, is_scheduled, auto_increment_schedule, schedule_interval, group_id, video_folder, set_music, upload_count, remove_title, need_content_check, cookies)
-            VALUES (?, ?, 'idle', 0, 1, 5, NULL, NULL, 1, 1, 1, 0, ?)
-        `);
 
         for (const item of items) {
             const name = (item.name || item.profile_name || '').trim();
@@ -254,10 +247,23 @@ router.post('/profiles/import-cookies-json', (req, res) => {
                     results.updated++;
                 }
             } else {
-                const newId = Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7);
-                insertProfileStmt.run(newId, name, cookieStr);
-                byName.set(name.toLowerCase(), { id: newId, name });
-                results.created++;
+                try {
+                    const newProfile = createProfileRecord(db, {
+                        name,
+                        cookies: cookieStr,
+                        auto_increment_schedule: item.auto_increment_schedule !== undefined ? (item.auto_increment_schedule ? 1 : 0) : 1,
+                        schedule_interval: Number(item.schedule_interval) || 10,
+                        set_music: item.set_music !== undefined ? (item.set_music ? 1 : 0) : 1,
+                        remove_title: item.remove_title !== undefined ? (item.remove_title ? 1 : 0) : 1,
+                        need_content_check: item.need_content_check !== undefined ? (item.need_content_check ? 1 : 0) : 0,
+                        group_id: item.group_id || null,
+                        video_folder: item.video_folder || null
+                    });
+                    byName.set(name.toLowerCase(), { id: newProfile.id, name: newProfile.name });
+                    results.created++;
+                } catch (err) {
+                    results.errors.push(`Lỗi tạo profile "${name}": ${err.message}`);
+                }
             }
         }
 

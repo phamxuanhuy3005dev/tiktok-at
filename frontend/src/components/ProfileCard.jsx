@@ -13,6 +13,8 @@ const ProfileCard = React.memo(React.forwardRef(({
   onDelete,
   onOpen,
   onClose,
+  isTogglingBrowser = false,
+  isStarting = false,
   onStart,
   onLoginTikTok,
   onStopLoginTikTok,
@@ -67,7 +69,7 @@ const ProfileCard = React.memo(React.forwardRef(({
         </div>
         <div className="table-status-meta">
           <Clock size={10} />
-          {profile.last_run ? new Date(profile.last_run).toLocaleDateString() : 'Never run'}
+          {profile.last_run ? new Date(profile.last_run).toLocaleString('vi-VN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Chưa chạy'}
         </div>
       </div>
 
@@ -75,6 +77,8 @@ const ProfileCard = React.memo(React.forwardRef(({
         profile={profile}
         onOpen={onOpen}
         onClose={onClose}
+        isTogglingBrowser={isTogglingBrowser}
+        isStarting={isStarting}
         onStart={onStart}
         onOpenCookieModal={onOpenCookieModal}
       />

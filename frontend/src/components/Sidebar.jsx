@@ -1,9 +1,9 @@
 import { Layout, Moon, Settings, ShieldCheck, Sun, Users, Zap } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { key: 'profiles', label: 'Profiles Management', icon: Layout },
-  { key: 'groups', label: 'Groups', icon: Users },
-  { key: 'settings', label: 'System Settings', icon: Settings }
+  { key: 'profiles', label: 'Quản lý Profile', icon: Layout },
+  { key: 'groups', label: 'Nhóm Profile', icon: Users },
+  { key: 'settings', label: 'Cài đặt hệ thống', icon: Settings }
 ];
 
 // Left-hand navigation: logo, tab buttons and system status summary.
@@ -24,7 +24,7 @@ const Sidebar = ({ activeTab, onTabChange, profilesCount, maxConcurrency, theme,
             TikTok<span style={{ color: 'var(--primary)' }}>Manager</span>
           </h1>
         </div>
-        <p className="sidebar-subtitle">Enterprise Automation</p>
+        <p className="sidebar-subtitle">Hệ Thống Quản Lý & Tự Động Hóa</p>
       </div>
 
       <nav className="glass sidebar-nav">
@@ -47,14 +47,14 @@ const Sidebar = ({ activeTab, onTabChange, profilesCount, maxConcurrency, theme,
 
       <div className="glass sidebar-status">
         <h4 className="sidebar-status-title">
-          <ShieldCheck size={16} color="var(--success)" /> System Status
+          <ShieldCheck size={16} color="var(--success)" /> Trạng thái hệ thống
         </h4>
         <div className="status-row">
-          <span>Active Profiles</span>
+          <span>Tổng profile</span>
           <strong>{profilesCount}</strong>
         </div>
         <div className="status-row">
-          <span>Concurrency</span>
+          <span>Luồng song song</span>
           <strong>{maxConcurrency}</strong>
         </div>
       </div>
@@ -63,11 +63,11 @@ const Sidebar = ({ activeTab, onTabChange, profilesCount, maxConcurrency, theme,
         type="button"
         className="theme-toggle"
         onClick={onToggleTheme}
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        aria-label={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+        title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
       >
         {isDark ? <Sun size={16} /> : <Moon size={16} />}
-        {isDark ? 'Light Mode' : 'Dark Mode'}
+        {isDark ? 'Giao diện Sáng' : 'Giao diện Tối'}
       </button>
     </aside>
   );

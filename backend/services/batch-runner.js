@@ -36,13 +36,20 @@ export async function runSingleProfile(profile, limitUploads = false, uploadLimi
                     return { success: false, uploadedCount: 0, error: 'Video folder does not exist', profileId: profile.id, profileName: profile.name };
                 }
                 videos = fs.readdirSync(videoFolder).filter(file => {
+                    if (file.startsWith('.')) return false;
                     const ext = path.extname(file).toLowerCase();
                     return ext === '.mp4' || ext === '.mov' || ext === '.webm';
-                });
+                }).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
                 console.log(`[${profile.name}] Found ${videos.length} videos in ${videoFolder}`);
             }
         } catch (e) {
             console.error(`[${profile.name}] Folder error:`, e.message);
+        }
+
+        if (!videos || videos.length === 0) {
+            console.log(`[${profile.name}] Không tìm thấy video hợp lệ trong ${videoFolder}. Bỏ qua.`);
+            db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run('no_videos', profile.id);
+            return { success: false, uploadedCount: 0, error: 'Không tìm thấy video nào trong thư mục để upload', profileId: profile.id, profileName: profile.name };
         }
 
         const actualFolder = specificFile ? path.dirname(specificFile) : videoFolder;
@@ -51,12 +58,9 @@ export async function runSingleProfile(profile, limitUploads = false, uploadLimi
         if (uploadedCount > 0) {
             db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run('success', profile.id);
             return { success: true, uploadedCount, profileId: profile.id, profileName: profile.name };
-        } else if (videos.length === 0) {
-            db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run('idle', profile.id);
-            return { success: false, uploadedCount: 0, error: 'No videos in folder', profileId: profile.id, profileName: profile.name };
         } else {
             db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run('no_videos', profile.id);
-            return { success: false, uploadedCount: 0, error: 'No videos uploaded', profileId: profile.id, profileName: profile.name };
+            return { success: false, uploadedCount: 0, error: 'Không có video nào được upload', profileId: profile.id, profileName: profile.name };
         }
     } catch (error) {
         console.error(`[${profile.name}] Automation error:`, error);

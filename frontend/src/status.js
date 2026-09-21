@@ -3,14 +3,14 @@
 // cards, badges and modals stay consistent.
 
 export const STATUS_LABELS = {
-  idle: 'Idle',
-  uploading: 'Uploading',
-  logging_in: 'Logging In',
-  changing_avatar: 'Changing Avatar',
-  adding_favorite_music: 'Adding Music',
-  success: 'Success',
-  error: 'Error',
-  no_videos: 'No Videos'
+  idle: 'Sẵn sàng',
+  uploading: 'Đang upload',
+  logging_in: 'Đang đăng nhập',
+  changing_avatar: 'Đang đổi avatar',
+  adding_favorite_music: 'Đang thêm nhạc',
+  success: 'Thành công',
+  error: 'Lỗi',
+  no_videos: 'Không có video'
 };
 
 export const getStatusColor = (status = 'idle') => {

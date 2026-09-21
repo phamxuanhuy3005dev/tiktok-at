@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { selectFolder, selectImageFile, clearDebugFiles } from '../services/system-service.js';
+import { selectFolder, clearDebugFiles } from '../services/system-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,14 +18,7 @@ router.post('/select-folder', async (req, res) => {
     }
 });
 
-router.post('/select-image-file', async (req, res) => {
-    try {
-        const filePath = await selectImageFile();
-        res.json({ path: filePath });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+
 
 router.post('/system/clear-debug', (req, res) => {
     try {

@@ -12,19 +12,26 @@ const ProfileCardActions = React.memo(({
   profile,
   onOpen,
   onClose,
+  isTogglingBrowser = false,
+  isStarting = false,
   onStart,
   onOpenCookieModal
 }) => {
   const hasCookies = Boolean(profile.cookies && profile.cookies.trim());
-  const uploading = profile.status === 'uploading';
+  const uploading = profile.status === 'uploading' || isStarting;
   const isBrowserOpen = Boolean(profile.is_browser_open);
+
+  const browserTooltip = isTogglingBrowser
+    ? (isBrowserOpen ? 'Đang đóng trình duyệt...' : 'Đang mở trình duyệt...')
+    : (isBrowserOpen ? 'Trình duyệt đang mở • Nhấp để đóng' : 'Mở profile (Chrome để kiểm tra / đăng nhập)');
 
   return (
     <div className="table-actions">
       <IconActionButton
-        icon={<ExternalLink size={15} />}
+        icon={isTogglingBrowser ? <RefreshCw size={15} className="animate-spin" /> : <ExternalLink size={15} />}
         onClick={() => (isBrowserOpen && onClose ? onClose(profile.id) : onOpen(profile.id))}
-        title={isBrowserOpen ? 'Trình duyệt đang mở • Nhấp để đóng trình duyệt' : 'Mở profile (Mở Chrome để đăng nhập hoặc kiểm tra)'}
+        disabled={isTogglingBrowser}
+        title={browserTooltip}
         color={isBrowserOpen ? '#10b981' : 'var(--text)'}
         bg={isBrowserOpen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)'}
         border={isBrowserOpen ? 'rgba(16, 185, 129, 0.4)' : 'var(--border)'}
@@ -34,7 +41,7 @@ const ProfileCardActions = React.memo(({
         icon={uploading ? <RefreshCw size={15} className="animate-spin" /> : <Play size={15} fill="currentColor" />}
         onClick={() => onStart(profile.id)}
         disabled={uploading}
-        title={uploading ? 'Đang upload video...' : 'Bắt đầu upload video'}
+        title={uploading ? 'Đang xử lý / upload video...' : 'Bắt đầu upload video'}
         color={uploading ? 'var(--accent)' : 'var(--text)'}
         bg={uploading ? 'transparent' : 'rgba(255, 255, 255, 0.05)'}
         border="var(--border)"

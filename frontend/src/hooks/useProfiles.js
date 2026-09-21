@@ -72,11 +72,14 @@ const useProfiles = () => {
     profiles,
     selectedForRun,
     setIsLoading: profileData.setIsLoading,
-    setMessage
+    setMessage,
+    fetchData: profileData.fetchData
   });
   const {
     loggingInProfiles,
     addingFavoriteMusicProfiles,
+    togglingBrowserProfiles,
+    startingProfiles,
     musicSearchTerms,
     setMusicSearchTerms,
     syncProfilesStatus,
@@ -191,6 +194,8 @@ const useProfiles = () => {
     dismissBatchStatus,
     loggingInProfiles,
     addingFavoriteMusicProfiles,
+    togglingBrowserProfiles,
+    startingProfiles,
     cookieModalProfileId,
     musicSearchTerms,
 

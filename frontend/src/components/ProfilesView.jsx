@@ -33,6 +33,8 @@ const ProfilesView = ({
   deleteProfile,
   openProfile,
   closeProfile,
+  togglingBrowserProfiles = new Set(),
+  startingProfiles = new Set(),
   startLoginTikTok,
   stopLoginTikTok,
   loggingInProfiles = new Set(),
@@ -129,8 +131,8 @@ const ProfilesView = ({
           <div className="profile-table-head">
             <div />
             <span>Profile</span>
-            <span>Status</span>
-            <span style={{ textAlign: 'right', paddingRight: '8px' }}>Actions</span>
+            <span>Trạng thái</span>
+            <span style={{ textAlign: 'right', paddingRight: '8px' }}>Thao tác</span>
             <div />
           </div>
           {filteredProfiles.map((profile) => (
@@ -142,6 +144,8 @@ const ProfilesView = ({
               onDelete={deleteProfile}
               onOpen={openProfile}
               onClose={closeProfile}
+              isTogglingBrowser={togglingBrowserProfiles.has(profile.id)}
+              isStarting={startingProfiles.has(profile.id)}
               onStart={startAutomation}
               onUpdateName={updateProfileName}
               onOpenCookieModal={openCookieModal}
@@ -160,15 +164,15 @@ const ProfilesView = ({
           <div className="empty-state-icon">
             <Layout size={32} opacity={0.3} />
           </div>
-          <h3 className="empty-state-title">No profiles yet</h3>
-          <p>Add your first TikTok account profile to start automation.</p>
+          <h3 className="empty-state-title">Chưa có profile nào</h3>
+          <p>Thêm profile TikTok đầu tiên để bắt đầu quản lý và tự động hóa.</p>
         </div>
       )}
 
       {profiles.length > 0 && filteredProfiles.length === 0 && (
         <div className="empty-state empty-state--compact">
-          <p style={{ color: 'var(--text)', marginBottom: '8px', fontWeight: '600' }}>No profiles match this filter</p>
-          <p style={{ fontSize: '0.9rem' }}>Change the group filter above to see profiles.</p>
+          <p style={{ color: 'var(--text)', marginBottom: '8px', fontWeight: '600' }}>Không có profile nào trong nhóm này</p>
+          <p style={{ fontSize: '0.9rem' }}>Thay đổi bộ lọc nhóm ở trên để xem các profile khác.</p>
         </div>
       )}
 
@@ -223,6 +227,7 @@ const ProfilesView = ({
         open={Boolean(cookieModalProfileId)}
         onClose={closeCookieModal}
         profile={profiles.find((p) => p.id === cookieModalProfileId)}
+        isBrowserOpen={Boolean(profiles.find((p) => p.id === cookieModalProfileId)?.is_browser_open)}
         onSaveCookies={handleSaveProfileCookies}
         onCaptureFromBrowser={handleCaptureCookiesFromBrowser}
         onLogout={handleLogoutProfile}

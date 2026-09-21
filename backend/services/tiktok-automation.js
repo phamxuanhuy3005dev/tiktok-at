@@ -11,7 +11,7 @@ import {
     loggingInProfiles,
     addingFavoriteMusicProfiles
 } from './tracker.js';
-import { ensureProfileReadyForLaunch } from './browser-manager.js';
+import { ensureProfileReadyForLaunch, launchPersistentContextSafe, releaseProfileLocks } from './browser-manager.js';
 import {
     computeAutoIncrementTime,
     formatScheduleValue,
@@ -426,6 +426,11 @@ export async function checkExistingScheduledTime(page, log) {
 }
 
 export async function uploadVideo(profile, videoFolder, videos, limitUploads = false, uploadLimitCount = 0, forceUploadAll = false) {
+    if (!videos || videos.length === 0) {
+        console.log(`[${profile.name}] No compatible videos found in ${videoFolder}. Skipping.`);
+        return 0;
+    }
+
     const userDataDir = path.join(PROFILES_DIR, profile.name);
     let uploadedCount = 0;
     let lastScheduledTime = null;
@@ -435,8 +440,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
         log: (msg) => console.log(`[${profile.name}] ${msg}`)
     });
 
-    await ensureProfileReadyForLaunch(profile.id, profile.name);
-    const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
+    const browser = await launchPersistentContextSafe(chromium, userDataDir, browserOptions, profile);
     await injectProfileCookies(browser, profile);
 
     const log = (msg) => {
@@ -1190,6 +1194,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
     } finally {
         log(`Automation session ended.`);
         await browser.close().catch(() => null);
+        await releaseProfileLocks(userDataDir, profile.name).catch(() => {});
     }
 }
 export async function runTikTokLogin(profile) {
@@ -1205,8 +1210,7 @@ export async function runTikTokLogin(profile) {
     };
 
     const browserOptions = buildBrowserLaunchOptions(profile);
-    await ensureProfileReadyForLaunch(profile.id, profile.name);
-    const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
+    const browser = await launchPersistentContextSafe(chromium, userDataDir, browserOptions, profile);
 
     const session = {
         browser,
@@ -1252,8 +1256,9 @@ export async function runTikTokLogin(profile) {
     } finally {
         loggingInProfiles.delete(profileId);
         await browser.close().catch(() => null);
+        await releaseProfileLocks(userDataDir, profile.name).catch(() => {});
         db.prepare("UPDATE profiles SET status = 'idle' WHERE id = ?").run(profileId);
-        log('Káº¿t thÃºc phiÃªn kiá»ƒm tra cookie, trÃ¬nh duyá»‡t Ä‘Ã£ Ä‘Ã³ng.');
+        log('Kết thúc phiên kiểm tra cookie, trình duyệt đã đóng.');
     }
 }
 
@@ -1286,8 +1291,7 @@ export async function addFavoriteMusic(profile, searchTerm) {
     }
 
     const browserOptions = buildBrowserLaunchOptions(profile);
-    await ensureProfileReadyForLaunch(profile.id, profile.name);
-    const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
+    const browser = await launchPersistentContextSafe(chromium, userDataDir, browserOptions, profile);
     await injectProfileCookies(browser, profile);
     addingFavoriteMusicProfiles.add(profileId);
     db.prepare("UPDATE profiles SET status = ? WHERE id = ?").run('adding_favorite_music', profileId);
@@ -1347,6 +1351,7 @@ export async function addFavoriteMusic(profile, searchTerm) {
     } finally {
         addingFavoriteMusicProfiles.delete(profileId);
         await browser.close().catch(() => null);
+        await releaseProfileLocks(userDataDir, profile.name).catch(() => {});
         db.prepare("UPDATE profiles SET status = 'idle' WHERE id = ?").run(profileId);
         log('Browser closed, favorite music task complete.');
     }

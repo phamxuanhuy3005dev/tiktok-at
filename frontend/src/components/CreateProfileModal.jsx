@@ -60,7 +60,7 @@ const CreateProfileModal = ({
             {/* Header */}
             <div className="modal-header">
               <div>
-                <h3 className="modal-title">Create Profile</h3>
+                <h3 className="modal-title">Tạo Profile Mới</h3>
                 <p className="modal-subtitle">Thêm profile mới và thiết lập kênh</p>
               </div>
               <button

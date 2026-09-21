@@ -23,25 +23,6 @@ export function selectFolder() {
     });
 }
 
-export function selectImageFile() {
-    return new Promise((resolve, reject) => {
-        let script = '';
-        if (process.platform === 'darwin') {
-            script = `osascript -e 'POSIX path of (choose file of type {"public.png","public.jpeg","com.compuserve.gif"} with prompt "Select Avatar Image")'`;
-        } else if (process.platform === 'win32') {
-            script = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Filter = 'Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg'; $dialog.Title = 'Select Avatar Image'; if ($dialog.ShowDialog() -eq 'OK') { $dialog.FileName }"`;
-        } else {
-            return reject(new Error('File picker not supported on this platform'));
-        }
-
-        exec(script, (error, stdout) => {
-            if (error) return reject(new Error('File selection cancelled or failed'));
-            const selectedPath = stdout.trim();
-            if (!selectedPath) return reject(new Error('No file selected'));
-            resolve(selectedPath);
-        });
-    });
-}
 
 export const getDirSize = (dirPath) => {
     let size = 0;

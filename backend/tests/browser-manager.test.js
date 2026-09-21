@@ -6,7 +6,9 @@ import os from 'os';
 import {
     releaseProfileLocks,
     ensureProfileReadyForLaunch,
-    closeProfileBrowser
+    closeProfileBrowser,
+    getProfilePids,
+    launchPersistentContextSafe
 } from '../services/browser-manager.js';
 import { manualBrowsers } from '../services/tracker.js';
 
@@ -65,4 +67,32 @@ test('ensureProfileReadyForLaunch: closes open manual browser and cleans up trac
 
     assert.equal(browserClosed, true);
     assert.equal(manualBrowsers.has(fakeProfileId), false);
+});
+
+test('getProfilePids: returns array of integers without errors', async () => {
+    const pids = await getProfilePids('/tmp/nonexistent-profile-folder');
+    assert.ok(Array.isArray(pids));
+    assert.equal(pids.length, 0);
+});
+
+test('launchPersistentContextSafe: retries on lock collision error', async () => {
+    let callCount = 0;
+    const fakeChromium = {
+        launchPersistentContext: async (dir, opts) => {
+            callCount++;
+            if (callCount === 1) {
+                throw new Error('browserType.launchPersistentContext: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.');
+            }
+            return { fakeContext: true };
+        }
+    };
+
+    const tmpDir = path.join(os.tmpdir(), `test-safe-launch-${Date.now()}`);
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    const result = await launchPersistentContextSafe(fakeChromium, tmpDir, {}, { id: 'test-safe-id', name: 'test-safe-name' });
+    assert.equal(callCount, 2);
+    assert.equal(result.fakeContext, true);
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
 });

@@ -5,10 +5,13 @@ export const useAutomationActions = ({
   profiles = [],
   selectedForRun = new Set(),
   setIsLoading,
-  setMessage
+  setMessage,
+  fetchData
 } = {}) => {
   const [loggingInProfiles, setLoggingInProfiles] = useState(() => new Set());
   const [addingFavoriteMusicProfiles, setAddingFavoriteMusicProfiles] = useState(() => new Set());
+  const [togglingBrowserProfiles, setTogglingBrowserProfiles] = useState(() => new Set());
+  const [startingProfiles, setStartingProfiles] = useState(() => new Set());
   const [musicSearchTerms, setMusicSearchTerms] = useState({});
 
   const syncProfilesStatus = useCallback((newProfiles = []) => {
@@ -33,13 +36,17 @@ export const useAutomationActions = ({
 
   const startAutomation = useCallback(async (profileId = null) => {
     if (typeof setIsLoading === 'function') setIsLoading(true);
+    if (profileId) {
+      setStartingProfiles((prev) => new Set([...prev, profileId]));
+    }
     try {
       if (profileId) {
-        await axios.post('/api/start', { profileId });
+        const targetProfile = profiles.find((p) => p.id === profileId);
+        const res = await axios.post('/api/start', { profileId });
         if (typeof setMessage === 'function') {
           setMessage({
             type: 'success',
-            text: 'Automation started for profile'
+            text: `Đã bắt đầu tự động upload cho ${targetProfile?.name || 'profile'}`
           });
         }
       } else {
@@ -59,40 +66,73 @@ export const useAutomationActions = ({
           });
         }
       }
+      if (typeof fetchData === 'function') await fetchData();
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to start' });
+        const errText = err.response?.data?.error || err.message || 'Không thể bắt đầu tự động hóa';
+        setMessage({ type: 'error', text: errText });
       }
     } finally {
+      if (profileId) {
+        setStartingProfiles((prev) => {
+          const next = new Set(prev);
+          next.delete(profileId);
+          return next;
+        });
+      }
       if (typeof setIsLoading === 'function') setIsLoading(false);
     }
-  }, [selectedForRun, setIsLoading, setMessage]);
+  }, [profiles, selectedForRun, setIsLoading, setMessage, fetchData]);
 
   const openProfile = useCallback(async (profileId) => {
+    setTogglingBrowserProfiles((prev) => new Set([...prev, profileId]));
     try {
-      await axios.post('/api/open-profile', { profileId });
+      const targetProfile = profiles.find((p) => p.id === profileId);
+      const res = await axios.post('/api/open-profile', { profileId });
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Browser opened for profile' });
+        if (res.data?.status === 'already_open') {
+          setMessage({ type: 'info', text: `Trình duyệt cho ${targetProfile?.name || 'profile'} đã mở sẵn` });
+        } else {
+          setMessage({ type: 'success', text: `Đã mở trình duyệt cho ${targetProfile?.name || 'profile'}` });
+        }
       }
+      if (typeof fetchData === 'function') await fetchData();
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to open browser' });
+        const errText = err.response?.data?.error || err.message || 'Không thể mở trình duyệt';
+        setMessage({ type: 'error', text: errText });
       }
+    } finally {
+      setTogglingBrowserProfiles((prev) => {
+        const next = new Set(prev);
+        next.delete(profileId);
+        return next;
+      });
     }
-  }, [setMessage]);
+  }, [profiles, setMessage, fetchData]);
 
   const closeProfile = useCallback(async (profileId) => {
+    setTogglingBrowserProfiles((prev) => new Set([...prev, profileId]));
     try {
+      const targetProfile = profiles.find((p) => p.id === profileId);
       await axios.post('/api/close-profile', { profileId });
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'success', text: 'Browser closed for profile' });
+        setMessage({ type: 'success', text: `Đã đóng trình duyệt cho ${targetProfile?.name || 'profile'}` });
       }
+      if (typeof fetchData === 'function') await fetchData();
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to close browser' });
+        const errText = err.response?.data?.error || err.message || 'Không thể đóng trình duyệt';
+        setMessage({ type: 'error', text: errText });
       }
+    } finally {
+      setTogglingBrowserProfiles((prev) => {
+        const next = new Set(prev);
+        next.delete(profileId);
+        return next;
+      });
     }
-  }, [setMessage]);
+  }, [profiles, setMessage, fetchData]);
 
   const startLoginTikTok = useCallback(async (profileId) => {
     try {
@@ -205,6 +245,8 @@ export const useAutomationActions = ({
     setLoggingInProfiles,
     addingFavoriteMusicProfiles,
     setAddingFavoriteMusicProfiles,
+    togglingBrowserProfiles,
+    startingProfiles,
     musicSearchTerms,
     setMusicSearchTerms,
     syncProfilesStatus,

@@ -8,45 +8,74 @@ import { manualBrowsers, loggingInProfiles } from './tracker.js';
 const execAsync = promisify(exec);
 
 /**
- * Clean up OS-level lock files and any lingering/orphaned Chromium processes
- * for a specific profile's user-data-dir.
- *
- * Supports macOS, Linux, and Windows.
+ * Query OS process table to find all Chromium processes (main + helpers)
+ * whose command line contains this profile user-data-dir.
+ */
+export async function getProfilePids(userDataDir) {
+    if (!userDataDir) return [];
+    try {
+        if (process.platform === 'win32') {
+            const dirName = path.basename(userDataDir).replace(/["'\\]/g, '');
+            if (!dirName) return [];
+            const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Where-Object { ($_.Name -like '*chrome*') -and ($_.CommandLine -like '*${dirName}*') } | Select-Object -ExpandProperty ProcessId"`;
+            const { stdout } = await execAsync(psCmd).catch(() => ({ stdout: '' }));
+            return stdout.split('\n')
+                .map(s => parseInt(s.trim(), 10))
+                .filter(pid => pid && !isNaN(pid) && pid > 0);
+        } else {
+            // macOS and Linux
+            const { stdout } = await execAsync('ps -Ao pid,args').catch(() => ({ stdout: '' }));
+            const pids = [];
+            for (const line of stdout.split('\n')) {
+                if (line.includes(userDataDir) && (line.includes('chrome') || line.includes('Chromium') || line.includes('Google Chrome'))) {
+                    const parts = line.trim().split(/\s+/);
+                    const pid = parseInt(parts[0], 10);
+                    if (pid && !isNaN(pid) && pid !== process.pid) {
+                        pids.push(pid);
+                    }
+                }
+            }
+            return pids;
+        }
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Clean up OS-level lock files and terminate ALL lingering/orphaned Chromium processes
+ * (main, GPU, Network, Renderers) for a specific profile's user-data-dir.
  */
 export async function releaseProfileLocks(userDataDir, profileName) {
     if (!userDataDir || !fs.existsSync(userDataDir)) return;
 
-    // 1. macOS & Linux: Check SingletonLock symlink and process
-    const singletonLock = path.join(userDataDir, 'SingletonLock');
-    try {
-        const stat = fs.lstatSync(singletonLock);
-        if (stat.isSymbolicLink()) {
-            const target = fs.readlinkSync(singletonLock);
-            const parts = target.split('-');
-            const pidStr = parts[parts.length - 1];
-            const pid = parseInt(pidStr, 10);
-            if (pid && !isNaN(pid) && pid > 0) {
-                try {
-                    process.kill(pid, 0); // Is process alive?
-                    // Check process command name to avoid killing an unrelated process if PID was recycled
-                    const { stdout } = await execAsync(`ps -p ${pid} -o comm=`).catch(() => ({ stdout: '' }));
-                    const comm = stdout.toLowerCase().trim();
-                    if (comm.includes('chrome') || comm.includes('chromium')) {
-                        console.log(`[${profileName}] Releasing locked Chrome process (PID ${pid})...`);
-                        try { process.kill(pid, 'SIGTERM'); } catch (e) {}
-                        await new Promise(r => setTimeout(r, 400));
-                        try { process.kill(pid, 'SIGKILL'); } catch (e) {}
-                    }
-                } catch (e) {
-                    // PID is already dead
-                }
-            }
+    // 1. Terminate all Chromium processes matching this profile's user-data-dir
+    const pids = await getProfilePids(userDataDir);
+    if (pids.length > 0) {
+        console.log(`[${profileName}] Found ${pids.length} lingering Chromium processes for profile. Terminating...`);
+        for (const pid of pids) {
+            try { process.kill(pid, 'SIGTERM'); } catch (e) {}
         }
-    } catch (e) {
-        // File does not exist or lstat error
+
+        // Wait up to 300ms for graceful exit
+        await new Promise(r => setTimeout(r, 200));
+
+        const remaining = await getProfilePids(userDataDir);
+        for (const pid of remaining) {
+            try { process.kill(pid, 'SIGKILL'); } catch (e) {}
+        }
+
+        // Poll briefly until all processes disappear from the process table
+        let pollCount = 0;
+        while (pollCount < 15) {
+            const left = await getProfilePids(userDataDir);
+            if (left.length === 0) break;
+            await new Promise(r => setTimeout(r, 60));
+            pollCount++;
+        }
     }
 
-    // Unlink lock files if still present
+    // 2. Unlink lock and socket files if still present on disk
     for (const file of ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile']) {
         const p = path.join(userDataDir, file);
         try {
@@ -57,24 +86,8 @@ export async function releaseProfileLocks(userDataDir, profileName) {
         } catch (e) {}
     }
 
-    // 2. Windows: Check lingering chrome.exe matching this profile folder
-    if (process.platform === 'win32') {
-        try {
-            const safeName = (profileName || '').replace(/["'\\]/g, '');
-            if (safeName) {
-                const psCmd = `powershell -NoProfile -NonInteractive -Command "Get-CimInstance Win32_Process | Where-Object { ($_.Name -like '*chrome*') -and ($_.CommandLine -like '*${safeName}*') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"`;
-                await execAsync(psCmd).catch(() => {});
-            }
-        } catch (e) {}
-
-        const lockfile = path.join(userDataDir, 'lockfile');
-        try {
-            if (fs.existsSync(lockfile)) fs.unlinkSync(lockfile);
-        } catch (e) {}
-    }
-
-    // Short pause for filesystem to register lock release
-    await new Promise(r => setTimeout(r, 300));
+    // Brief settling delay for filesystem locks
+    await new Promise(r => setTimeout(r, 150));
 }
 
 /**
@@ -95,7 +108,7 @@ export async function syncCookiesToDatabase(browser, profileId) {
 
 /**
  * Gracefully close any manual browser session for a profile, saving cookies first,
- * and releasing OS locks.
+ * and releasing all OS locks and child helper processes.
  */
 export async function closeProfileBrowser(profileId, profileName) {
     if (manualBrowsers.has(profileId)) {
@@ -140,6 +153,37 @@ export async function ensureProfileReadyForLaunch(profileId, profileName) {
 }
 
 /**
+ * Robust launcher for Playwright launchPersistentContext.
+ * Ensures the profile is clean before launch, and includes automatic self-healing retry
+ * if a race condition or locked directory error is encountered.
+ */
+export async function launchPersistentContextSafe(chromiumInstance, userDataDir, browserOptions, profile) {
+    const profileId = profile.id;
+    const profileName = profile.name;
+
+    await ensureProfileReadyForLaunch(profileId, profileName);
+
+    try {
+        return await chromiumInstance.launchPersistentContext(userDataDir, browserOptions);
+    } catch (err) {
+        const msg = String(err?.message || '');
+        const isLockError = msg.includes('Opening in existing browser session') ||
+                            msg.includes('Target page, context or browser has been closed') ||
+                            msg.includes('SingletonLock') ||
+                            msg.includes('ProcessSingleton');
+
+        if (isLockError) {
+            console.warn(`[${profileName}] Browser launch collision detected: "${msg}". Force-releasing locks and retrying...`);
+            await releaseProfileLocks(userDataDir, profileName);
+            await new Promise(r => setTimeout(r, 400));
+            return await chromiumInstance.launchPersistentContext(userDataDir, browserOptions);
+        }
+
+        throw err;
+    }
+}
+
+/**
  * Attach automatic close listeners to a manual browser context.
  * When the user closes the window (or all tabs), this automatically terminates
  * the persistent Chromium process on macOS/Windows and cleans up tracker maps.
@@ -147,23 +191,33 @@ export async function ensureProfileReadyForLaunch(profileId, profileName) {
 export function setupAutoCloseOnEmpty(browser, profile, syncTimer = null) {
     let isClosing = false;
 
+    const cleanupAndClose = async (reason) => {
+        if (isClosing) return;
+        isClosing = true;
+
+        console.log(`[${profile.name}] ${reason}. Terminating browser process.`);
+        if (syncTimer) clearInterval(syncTimer);
+        await syncCookiesToDatabase(browser, profile.id);
+        manualBrowsers.delete(profile.id);
+
+        try {
+            await browser.close();
+        } catch (e) {}
+
+        const userDataDir = path.join(PROFILES_DIR, profile.name);
+        await releaseProfileLocks(userDataDir, profile.name);
+    };
+
     const handleWindowClose = () => {
         setTimeout(async () => {
             if (isClosing) return;
             try {
                 const openPages = browser.pages().filter(p => !p.isClosed());
                 if (openPages.length === 0) {
-                    isClosing = true;
-                    console.log(`[${profile.name}] All browser windows closed by user. Terminating browser process.`);
-                    if (syncTimer) clearInterval(syncTimer);
-                    await syncCookiesToDatabase(browser, profile.id);
-                    manualBrowsers.delete(profile.id);
-                    await browser.close().catch(() => {});
-                    const userDataDir = path.join(PROFILES_DIR, profile.name);
-                    await releaseProfileLocks(userDataDir, profile.name);
+                    await cleanupAndClose('All browser windows closed by user');
                 }
             } catch (e) {}
-        }, 250);
+        }, 200);
     };
 
     browser.on('page', (newPage) => {
@@ -173,4 +227,8 @@ export function setupAutoCloseOnEmpty(browser, profile, syncTimer = null) {
     for (const page of browser.pages()) {
         page.on('close', handleWindowClose);
     }
+
+    browser.on('close', () => {
+        cleanupAndClose('Browser context closed');
+    });
 }

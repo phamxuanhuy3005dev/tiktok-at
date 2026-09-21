@@ -27,8 +27,8 @@ const ProfilesToolbar = ({
   return (
     <div className="dash-top">
       <div>
-        <h2 className="page-title">Profiles Dashboard</h2>
-        <p className="page-subtitle">Manage and automate your TikTok accounts</p>
+        <h2 className="page-title">Quản lý Profile</h2>
+        <p className="page-subtitle">Quản lý và tự động hóa các kênh TikTok</p>
       </div>
       <div className="dash-tools">
         <button

@@ -32,7 +32,6 @@ export function createProfileRecord(db, {
     music_search,
     auto_increment_schedule,
     schedule_interval,
-    use_fingerprint,
     account_id,
     pass,
     email,
@@ -104,10 +103,6 @@ export function createProfileRecord(db, {
         if (cols.has('need_content_check')) {
             fields.push('need_content_check');
             values.push(normalizedNeedContentCheck);
-        }
-        if (cols.has('use_fingerprint')) {
-            fields.push('use_fingerprint');
-            values.push(use_fingerprint !== undefined ? (use_fingerprint ? 1 : 0) : 1);
         }
         if (cols.has('channel_ids')) {
             fields.push('channel_ids');

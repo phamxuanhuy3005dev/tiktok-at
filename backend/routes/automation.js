@@ -26,6 +26,7 @@ import { downloadAndPrepareVideo } from '../services/video-downloader.js';
 import {
     closeProfileBrowser,
     ensureProfileReadyForLaunch,
+    launchPersistentContextSafe,
     setupAutoCloseOnEmpty,
     syncCookiesToDatabase
 } from '../services/browser-manager.js';
@@ -113,14 +114,12 @@ router.post('/open-profile', async (req, res) => {
     }
 
     try {
-        await ensureProfileReadyForLaunch(profile.id, profile.name);
-
         const userDataDir = path.join(PROFILES_DIR, profile.name);
         const browserOptions = buildBrowserLaunchOptions(profile, {
             log: (msg) => console.log(`[${profile.name}] ${msg}`)
         });
 
-        const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
+        const browser = await launchPersistentContextSafe(chromium, userDataDir, browserOptions, profile);
         await injectProfileCookies(browser, profile);
         manualBrowsers.set(profileId, browser);
 
