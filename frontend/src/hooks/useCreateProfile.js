@@ -14,7 +14,6 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
   const [newProfileRemoveTitle, setNewProfileRemoveTitle] = useState(true);
   const [newProfileSetMusic, setNewProfileSetMusic] = useState(true);
   const [newProfileNeedContentCheck, setNewProfileNeedContentCheck] = useState(false);
-  const [newProfileUseFingerprint, setNewProfileUseFingerprint] = useState(true);
 
   const resetCreateProfileForm = useCallback(() => {
     setNewProfileName('');
@@ -26,7 +25,6 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     setNewProfileRemoveTitle(true);
     setNewProfileSetMusic(true);
     setNewProfileNeedContentCheck(false);
-    setNewProfileUseFingerprint(true);
   }, []);
 
   const closeCreateProfileModal = useCallback(({ force } = {}) => {
@@ -51,8 +49,7 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
         schedule_interval: newProfileScheduleInterval || 5,
         remove_title: newProfileRemoveTitle ? 1 : 0,
         set_music: newProfileSetMusic ? 1 : 0,
-        need_content_check: newProfileNeedContentCheck ? 1 : 0,
-        use_fingerprint: newProfileUseFingerprint ? 1 : 0
+        need_content_check: newProfileNeedContentCheck ? 1 : 0
       });
       closeCreateProfileModal({ force: true });
       if (typeof fetchData === 'function') {
@@ -79,7 +76,6 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     newProfileRemoveTitle,
     newProfileSetMusic,
     newProfileNeedContentCheck,
-    newProfileUseFingerprint,
     closeCreateProfileModal,
     fetchData,
     setMessage
@@ -107,8 +103,6 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     setNewProfileSetMusic,
     newProfileNeedContentCheck,
     setNewProfileNeedContentCheck,
-    newProfileUseFingerprint,
-    setNewProfileUseFingerprint,
     resetCreateProfileForm,
     closeCreateProfileModal,
     addProfile

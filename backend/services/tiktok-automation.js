@@ -5,7 +5,6 @@ import { chromium } from 'playwright';
 import { db, PROFILES_DIR, DUMMY_VIDEOS_DIR } from '../db.js';
 import { buildBrowserLaunchOptions } from '../browser-launch.js';
 import { injectProfileCookies } from './cookie-service.js';
-import { sendTelegramNotification } from './system-service.js';
 import {
     runningProfiles,
     processingProfiles,
@@ -1173,19 +1172,6 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                     uploadedCount++;
                 } catch (err) {
                     log(`ERROR deleting file: ${err.message}`);
-                }
-
-                try {
-                    let message = `🎬 <b>Upload TikTok thành công!</b>\n` +
-                                  `👤 <b>Profile:</b> <code>${profile.name}</code>\n` +
-                                  `📹 <b>Video:</b> <code>${videoFileName}</code>\n` +
-                                  `🕒 <b>Thời gian:</b> <code>${new Date().toLocaleString('vi-VN')}</code>`;
-                    if (videoLink) {
-                        message += `\n🔗 <b>Link video:</b> <a href="${videoLink}">${videoLink}</a>`;
-                    }
-                    await sendTelegramNotification(message);
-                } catch (telegramErr) {
-                    log(`ERROR sending Telegram notification: ${telegramErr.message}`);
                 }
 
                 // Wait before next loop iteration to let things settle

@@ -74,8 +74,6 @@ const ProfilesView = ({
   setNewProfileSetMusic,
   newProfileNeedContentCheck,
   setNewProfileNeedContentCheck,
-  newProfileUseFingerprint,
-  setNewProfileUseFingerprint,
   closeCreateProfileModal,
   addProfile,
   handleSelectFolderForCreateProfile,
@@ -93,8 +91,6 @@ const ProfilesView = ({
   updateProfileUploadCount,
   updateProfileRemoveTitle,
   updateProfileNeedContentCheck,
-  updateProfileUseFingerprint,
-  resetProfileFingerprint,
   handleUpdateMusicSearchTerm
 }) => {
   const hasSelection = (selectedForRun?.size || 0) > 0;
@@ -194,8 +190,6 @@ const ProfilesView = ({
         setNewProfileSetMusic={setNewProfileSetMusic}
         newProfileNeedContentCheck={newProfileNeedContentCheck}
         setNewProfileNeedContentCheck={setNewProfileNeedContentCheck}
-        newProfileUseFingerprint={newProfileUseFingerprint}
-        setNewProfileUseFingerprint={setNewProfileUseFingerprint}
         groups={groups}
         isCreatingProfile={isCreatingProfile}
         isSelectingFolder={isSelectingFolder}
@@ -219,8 +213,6 @@ const ProfilesView = ({
         onUpdateUploadCount={updateProfileUploadCount}
         onUpdateRemoveTitle={updateProfileRemoveTitle}
         onUpdateNeedContentCheck={updateProfileNeedContentCheck}
-        onUpdateUseFingerprint={updateProfileUseFingerprint}
-        onResetFingerprint={resetProfileFingerprint}
         musicSearchTerm={editingProfileId ? (musicSearchTerms[editingProfileId] || '') : ''}
         onUpdateMusicSearchTerm={handleUpdateMusicSearchTerm}
       />

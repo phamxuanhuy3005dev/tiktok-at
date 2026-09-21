@@ -1,33 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
-import axios from 'axios';
-import { PROFILES_DIR, getConfig } from '../db.js';
-
-const TELEGRAM_DEFAULT_TOKEN = '7952619216:AAFO_cgfDyV1TRism4j7shaaTIgGdtxF6pU';
-const TELEGRAM_DEFAULT_CHAT_ID = '1370074402';
-
-export async function sendTelegramNotification(message) {
-    const token = getConfig('telegramToken') || process.env.TELEGRAM_BOT_TOKEN || TELEGRAM_DEFAULT_TOKEN;
-    const chatId = getConfig('telegramChatId') || process.env.TELEGRAM_CHAT_ID || TELEGRAM_DEFAULT_CHAT_ID;
-
-    if (!token || !chatId) {
-        console.log('[Telegram] Notification skipped: token or chat_id not configured');
-        return;
-    }
-
-    try {
-        const url = `https://api.telegram.org/bot${token}/sendMessage`;
-        await axios.post(url, {
-            chat_id: chatId,
-            text: message,
-            parse_mode: 'HTML'
-        });
-        console.log(`[Telegram] Message sent: ${message.replace(/<[^>]*>/g, '')}`);
-    } catch (err) {
-        console.error('Failed to send Telegram notification:', err.message);
-    }
-}
+import { PROFILES_DIR } from '../db.js';
 
 export function selectFolder() {
     return new Promise((resolve, reject) => {

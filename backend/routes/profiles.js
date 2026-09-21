@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { db, PROFILES_DIR, BASE_DIR } from '../db.js';
 import { createProfileRecord } from '../profile-store.js';
-import { resetProfileFingerprint } from '../services/fingerprint-service.js';
 import { clearTrashForProfiles } from '../services/system-service.js';
 import { manualBrowsers } from '../services/tracker.js';
 
@@ -218,16 +217,6 @@ router.post('/profiles/delete-multiple', async (req, res) => {
             db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
         }
         res.json({ success: true, count: ids.length });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/profiles/:id/random-fingerprint — Generate new random fingerprint
-router.post('/profiles/:id/random-fingerprint', async (req, res) => {
-    try {
-        const result = await resetProfileFingerprint(db, req.params.id);
-        res.json({ success: true, fingerprint: result.fingerprint });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

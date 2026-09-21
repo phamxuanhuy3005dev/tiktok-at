@@ -58,9 +58,3 @@ Tài liệu tổng hợp các tình huống thường gặp khi vận hành hệ
   npm install
   npx playwright install chromium
   ```
-
-### ❓ Triệu chứng: Thông báo Telegram không gửi về
-- **Kiểm tra**:
-  1. Bot Token và Chat ID đã chính xác chưa.
-  2. Bạn đã nhấn `/start` trên bot của mình chưa (nếu chưa nhắn cho bot, bot sẽ không có quyền gửi tin nhắn đến Chat ID của bạn).
-  3. Dùng nút **"Kiểm tra Telegram"** trong mục Cài đặt (Settings) trên giao diện để kiểm tra trực tiếp.

@@ -18,14 +18,14 @@ Tài liệu này mô tả chi tiết kiến trúc kĩ thuật, cơ chế lưu tr
 │  ├── Routes: /api/profiles, /api/automation, /api/system... │
 │  ├── Tracker Service: Quản lý trạng thái realtime           │
 │  ├── Batch Runner: Điều phối chạy đơn lẻ / hàng loạt        │
-│  └── System Service: Dọn cache, RAM, Telegram Bot Alerts     │
+│  └── System Service: Dọn cache, RAM, chọn thư mục native     │
 └──────────────┬───────────────────────────────┬──────────────┘
                │ SQLite Reads/Writes           │ Playwright Automation
 ┌──────────────▼──────────────┐ ┌──────────────▼──────────────┐
 │       DATABASE LAYER        │ │      PLAYWRIGHT ENGINE      │
 │  SQLite (better-sqlite3)    │ │  Persistent Chromium Context│
 │  - profiles (indexed)       │ │  - Cookie Injector          │
-│  - groups, app_config       │ │  - Anti-detect Fingerprint  │
+│  - groups, app_config       │ │  - Clean Native Chrome Mode │
 │  - WAL journal mode         │ │  - DOM Event Interceptor    │
 └─────────────────────────────┘ └──────────────┬──────────────┘
                                                │
@@ -58,7 +58,6 @@ Lưu trữ thông tin cấu hình của từng kênh TikTok:
 | `music_search`| TEXT | Chuỗi từ khóa tìm nhạc, phân tách bởi dấu phẩy |
 | `remove_title`| INTEGER | `1` để tự động xóa caption/tiêu đề từ tên file |
 | `need_content_check` | INTEGER | `1` để chạy Content Check Lite trước khi đăng |
-| `use_fingerprint` | INTEGER | `1` để giả lập fingerprint trình duyệt |
 | `created_at` | DATETIME | Thời gian khởi tạo profile |
 
 ### 2.2 Bảng `groups`
@@ -69,7 +68,7 @@ Phân nhóm kênh theo chủ đề hoặc chiến dịch:
 
 ### 2.3 Bảng `app_config`
 Lưu trữ cấu hình toàn cục:
-- `key`: TEXT PRIMARY KEY (e.g. `telegramToken`, `telegramChatId`, `videoFolder`)
+- `key`: TEXT PRIMARY KEY (e.g. `videoFolder`)
 - `value`: TEXT
 
 ---
@@ -103,7 +102,7 @@ Mỗi lần `uploadVideo` được kích hoạt, hệ sinh thái tự động ho
          │
 [9. Lên Lịch / Đăng]  ──► Chọn Schedule + điền Date/Time HOẶC bấm Post trực tiếp
          │
-[10. Xác Nhận & Báo Cáo]── Bắt publish_id từ API response, xóa video nguồn, gửi Telegram
+[10. Xác Nhận & Kết Thúc]─ Bắt publish_id từ API response, xóa video nguồn, cập nhật DB
 ```
 
 ---

@@ -1,35 +1,13 @@
-import React, { useState } from 'react';
-import { Video, AlertCircle, ShieldCheck, Bell, Send, CheckCircle2 } from 'lucide-react';
-import axios from 'axios';
-import { showToast } from '../utils/toast';
+import React from 'react';
+import { Video, AlertCircle, ShieldCheck } from 'lucide-react';
 
 const SettingsView = ({ config, setConfig, updateConfig }) => {
-  const [testingTelegram, setTestingTelegram] = useState(false);
-
-  const handleTestTelegram = async () => {
-    setTestingTelegram(true);
-    try {
-      // First save current config so backend uses the newest token/chat_id
-      await axios.post('/api/config', config);
-      const res = await axios.post('/api/system/test-telegram');
-      if (res.data.success) {
-        showToast({ type: 'success', text: 'Đã gửi thông báo kiểm tra tới Telegram thành công!' });
-      } else {
-        showToast({ type: 'error', text: res.data.error || 'Gửi test Telegram thất bại' });
-      }
-    } catch (err) {
-      showToast({ type: 'error', text: err.response?.data?.error || err.message });
-    } finally {
-      setTestingTelegram(false);
-    }
-  };
-
   return (
     <section>
       <div className="page-header">
         <div>
           <h2 className="page-title">Cấu hình Hệ thống</h2>
-          <p className="page-subtitle">Thiết lập tham số tự động hóa &amp; thông báo</p>
+          <p className="page-subtitle">Thiết lập tham số tự động hóa và tài nguyên hệ thống</p>
         </div>
       </div>
 
@@ -77,60 +55,6 @@ const SettingsView = ({ config, setConfig, updateConfig }) => {
             </p>
           </div>
 
-          <div style={{ height: '1px', background: 'var(--border)', margin: '8px 0' }} />
-
-          {/* Telegram Settings */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <Bell size={18} color="var(--accent)" />
-              <span style={{ fontSize: '0.95rem', fontWeight: '600' }}>Thông báo Telegram (Tùy chọn)</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Telegram Bot Token
-                </label>
-                <input
-                  className="input"
-                  style={{ width: '100%', fontSize: '0.8rem', padding: '8px 12px' }}
-                  value={config.telegramToken || ''}
-                  onChange={(e) => setConfig({ ...config, telegramToken: e.target.value })}
-                  placeholder="VD: 7952619216:AAFO_cgfDyV1TRism4j7shaaTIgGdtxF6pU"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Telegram Chat ID
-                </label>
-                <input
-                  className="input"
-                  style={{ width: '100%', fontSize: '0.8rem', padding: '8px 12px' }}
-                  value={config.telegramChatId || ''}
-                  onChange={(e) => setConfig({ ...config, telegramChatId: e.target.value })}
-                  placeholder="VD: 1370074402"
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  onClick={handleTestTelegram}
-                  disabled={testingTelegram}
-                >
-                  <Send size={14} />
-                  {testingTelegram ? 'Đang gửi...' : 'Kiểm tra Telegram'}
-                </button>
-              </div>
-            </div>
-            <p className="input-hint" style={{ marginTop: '8px' }}>
-              Nhận thông báo tự động khi upload video hoàn tất (kèm link bài đăng) hoặc khi có lỗi.
-            </p>
-          </div>
-
           <button
             className="btn btn-primary btn-block"
             style={{ marginTop: '16px' }}
@@ -146,7 +70,7 @@ const SettingsView = ({ config, setConfig, updateConfig }) => {
           <AlertCircle size={20} color="var(--accent)" style={{ marginBottom: '8px' }} />
           <h4 style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Mẹo Hiệu Năng</h4>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Mỗi profile dùng 1 profile Chrome độc lập với cookies và fingerprint riêng. Hãy để số song song phù hợp với dung lượng RAM máy.
+            Mỗi profile dùng 1 profile Chrome độc lập với cookies và phiên duyệt web biệt lập. Hãy để số song song phù hợp với dung lượng RAM máy.
           </p>
         </div>
         <div className="glass tip-card">

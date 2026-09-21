@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { db, getConfig, UPLOADS_DIR } from '../db.js';
-import { sendTelegramNotification } from './system-service.js';
 import { uploadVideo } from './tiktok-automation.js';
 import {
     runningProfiles,
@@ -161,7 +160,6 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
             session.message = `Lượt 1 hoàn thành (${session.round1.completed.length} thành công, ${session.round1.failed.length} lỗi). Đang chạy lại ${profilesToRetry.length} profile lỗi...`;
 
             console.log(`[BatchSession] Starting Retry Round for ${profilesToRetry.length} failed profiles...`);
-            sendTelegramNotification(`⚠️ <b>Batch Upload - Lượt 1 Hoàn Tất</b>\n- Thành công: ${session.round1.completed.length}\n- Lỗi: ${session.round1.failed.length}\n\n🔄 <i>Tự động chạy lại ${profilesToRetry.length} profile bị lỗi...</i>`).catch(() => null);
 
             await runBatchQueue(profilesToRetry, (profile, res) => {
                 if (res && res.success) {
@@ -202,7 +200,6 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
     session.message = finalSummaryText;
 
     console.log(`[BatchSession] Execution finished:\n${finalSummaryText}`);
-    sendTelegramNotification(finalSummaryText.replace(/\n/g, '<br/>')).catch(() => null);
 }
 
 export async function runAllParallel(profilesToRun, limitUploads = false, uploadLimitCount = 0) {

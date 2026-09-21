@@ -7,8 +7,7 @@ import {
   Search,
   Trash2,
   Music,
-  ShieldCheck,
-  Fingerprint
+  ShieldCheck
 } from 'lucide-react';
 
 // Modal used to create a new TikTok profile, fully synchronized with EditProfileModal.
@@ -32,8 +31,6 @@ const CreateProfileModal = ({
   setNewProfileSetMusic,
   newProfileNeedContentCheck,
   setNewProfileNeedContentCheck,
-  newProfileUseFingerprint,
-  setNewProfileUseFingerprint,
   groups,
   isCreatingProfile,
   isSelectingFolder,
@@ -283,30 +280,6 @@ const CreateProfileModal = ({
                     </span>
                   </div>
                 </label>
-              </div>
-
-              {/* Browser Fingerprint */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border)' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={newProfileUseFingerprint}
-                      onChange={(e) => setNewProfileUseFingerprint(e.target.checked)}
-                      style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
-                      disabled={busy}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
-                        <Fingerprint size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
-                        Giả lập Vân tay Trình duyệt (Browser Fingerprint)
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                        Bật: tự động gán & duy trì vân tay trình duyệt cố định cho profile. Tắt: chạy Chrome mặc định.
-                      </span>
-                    </div>
-                  </label>
-                </div>
               </div>
             </div>
 

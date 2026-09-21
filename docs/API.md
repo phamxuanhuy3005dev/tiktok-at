@@ -121,19 +121,8 @@ Dọn dẹp toàn bộ dữ liệu tạm và bộ nhớ đệm của các profil
   }
   ```
 
-### `POST /api/system/test-telegram`
-Kiểm tra cấu hình Bot Telegram.
-- **Request Body**:
-  ```json
-  {
-    "token": "YOUR_BOT_TOKEN",
-    "chatId": "YOUR_CHAT_ID"
-  }
-  ```
-- **Response `200 OK`**: `{ "success": true, "message": "Test notification sent successfully" }`
-
 ### `GET /api/config`
-Lấy toàn bộ cấu hình hệ thống (Telegram, đường dẫn video mặc định, v.v.).
+Lấy toàn bộ cấu hình hệ thống (đường dẫn video mặc định, v.v.).
 
 ### `POST /api/config`
 Lưu cấu hình hệ thống.

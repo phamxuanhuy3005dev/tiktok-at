@@ -1,7 +1,7 @@
 # TikTok Multi-Profile Automation System 🎬🚀
 
 > **Hệ thống Quản trị & Tự động hoá Kênh TikTok Đa Tài Khoản Đẳng Cấp Sản Phẩm (Production-Ready)**  
-> Tối ưu hóa cho quy trình xây dựng mạng lưới kênh TikTok tự động, quản lý hàng loạt tài khoản biệt lập, tự động chèn nhạc thịnh hành, lên lịch phát hành thông minh và thông báo Telegram thời gian thực.
+> Tối ưu hóa cho quy trình xây dựng mạng lưới kênh TikTok tự động, quản lý hàng loạt tài khoản biệt lập, tự động chèn nhạc thịnh hành, lên lịch phát hành thông minh và chạy đa luồng ổn định.
 
 ---
 
@@ -17,7 +17,7 @@
 ## ⚡ Các Tính Năng Cốt Lõi
 
 ### 1. Quản Trị Đa Hồ Sơ (Multi-Profile Isolation)
-- Mỗi profile sở hữu một môi trường trình duyệt Chrome biệt lập: User Data Dir, cache, fingerprint, proxy và phiên đăng nhập hoàn toàn riêng biệt.
+- Mỗi profile sở hữu một môi trường trình duyệt Chrome biệt lập: User Data Dir, cache, proxy và phiên đăng nhập hoàn toàn riêng biệt.
 - Tự động bắt và đồng bộ Cookie vào cơ sở dữ liệu sau mỗi phiên đăng nhập, loại bỏ tình trạng phải login lại nhiều lần.
 - Phân nhóm tài khoản (Groups) để quản lý chiến dịch dễ dàng.
 
@@ -44,15 +44,10 @@
 - Giả lập hành vi người dùng thật: lướt For You feed, xem video với thời lượng ngẫu nhiên, tự động like xác suất ngẫu nhiên.
 - Giúp tăng điểm tin cậy (Trust score) cho các kênh mới.
 
-### 6. Cảnh Báo & Báo Cáo Qua Telegram Bot
-- Gửi thông báo ngay lập tức về điện thoại khi có video đăng thành công hoặc gặp lỗi.
-- Đính kèm trực tiếp link video đã đăng trên TikTok (`https://www.tiktok.com/@user/video/...`) để kiểm tra nhanh.
-- Cấu hình Telegram Token và Chat ID trực tiếp trên giao diện Cài đặt (Settings) với nút test kết nối tức thì.
-
-### 7. Dọn Dẹp Cache & Tối Ưu Hệ Thống
+### 6. Dọn Dẹp Cache & Tối Ưu Hệ Thống
 - Nút bấm 1-click giải phóng hàng GB dung lượng cache duyệt web của các profile.
 
-### 8. Bộ Công Cụ Tạo Video Mẫu (Dummy Video Generator)
+### 7. Bộ Công Cụ Tạo Video Mẫu (Dummy Video Generator)
 - Tích hợp sẵn công cụ tạo video chuẩn dọc 9:16 (720x1280 H.264+AAC) bằng FFmpeg phục vụ thử nghiệm tính năng mà không cần chuẩn bị video thủ công.
 
 ---
@@ -156,12 +151,6 @@ Tại bảng danh sách Profile, bấm nút **Sửa** (icon bút chì):
   - Chọn chế độ: **Tuần tự (Sequential)** (an toàn, tiết kiệm RAM) hoặc **Cùng lúc (Parallel)** (nhanh chóng).
   - Nhấn **Bắt đầu chạy hàng loạt**.
 
-### 4. Cấu Hình Thông Báo Telegram
-1. Vào tab **Cài đặt (Settings)** trên thanh điều hướng.
-2. Nhập **Telegram Bot Token** và **Telegram Chat ID**.
-3. Bấm **Kiểm tra Telegram** để nhận tin nhắn mẫu thử nghiệm.
-4. Bấm **Lưu cấu hình**. Mọi video đăng thành công sau đó sẽ được bot gửi kèm link xem trực tiếp.
-
 ---
 
 ## 🗂 Cấu Trúc Dự Án
@@ -174,7 +163,7 @@ tiktok-at/
 │   │   ├── tiktok-automation.js# Script Playwright tương tác TikTok Studio
 │   │   ├── batch-runner.js     # Trình điều phối chạy hàng loạt & retry
 │   │   ├── cookie-service.js   # Quản lý & inject cookie phiên
-│   │   ├── system-service.js   # Dọn cache, RAM, Telegram notification
+│   │   ├── system-service.js   # Dọn cache, RAM, chọn thư mục native
 │   │   └── tracker.js          # Theo dõi trạng thái realtime của profiles
 │   ├── scripts/                # Utility scripts (generate-dummy-videos, e2e tests)
 │   ├── tests/                  # Unit tests (Node.js test runner tích hợp)

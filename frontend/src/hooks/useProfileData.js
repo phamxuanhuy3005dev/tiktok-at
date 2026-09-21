@@ -303,32 +303,6 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     }
   };
 
-  const updateProfileUseFingerprint = async (profileId, useFingerprint) => {
-    try {
-      await axios.put(`/api/profiles/${profileId}`, { use_fingerprint: useFingerprint ? 1 : 0 });
-      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, use_fingerprint: useFingerprint ? 1 : 0 } : p)));
-    } catch (err) {
-      console.error('Error updating use_fingerprint:', err);
-    }
-  };
-
-  const resetProfileFingerprint = async (profileId) => {
-    try {
-      const res = await axios.post(`/api/profiles/${profileId}/random-fingerprint`);
-      if (res.data?.fingerprint) {
-        setProfiles((prev) =>
-          prev.map((p) =>
-            p.id === profileId ? { ...p, fingerprint: JSON.stringify(res.data.fingerprint), use_fingerprint: 1 } : p
-          )
-        );
-        setMessage({ type: 'success', text: 'Đã tạo và gán vân tay trình duyệt mới thành công!' });
-      }
-    } catch (err) {
-      console.error('Error resetting fingerprint:', err);
-      setMessage({ type: 'error', text: 'Lỗi khi reset vân tay trình duyệt' });
-    }
-  };
-
   const clearTrash = async (targetSet) => {
     const target = targetSet || selectedForRun;
     if (!target || target.size === 0) {
@@ -421,8 +395,6 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     updateProfileAutoIncrementSchedule,
     updateProfileScheduleInterval,
     updateProfileUploadCount,
-    updateProfileUseFingerprint,
-    resetProfileFingerprint,
     clearTrash,
     clearDebugFiles,
     getStatusColor
