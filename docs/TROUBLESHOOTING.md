@@ -58,3 +58,13 @@ Tài liệu tổng hợp các tình huống thường gặp khi vận hành hệ
   npm install
   npx playwright install chromium
   ```
+
+### ❓ Triệu chứng: Lỗi `Opening in existing browser session` / `Profile is already in use`
+- **Hiện tượng**: Khi bấm "Bắt đầu" hoặc "Mở Profile", terminal báo lỗi Chromium không thể mở vì thư mục profile đang bị một phiên khác chiếm giữ.
+- **Nguyên nhân**:
+  - **Trên macOS**: Nút "x" màu đỏ ở góc cửa sổ chỉ đóng cửa sổ giao diện mà không tắt hoàn toàn tiến trình Chromium (ứng dụng vẫn chạy ngầm).
+  - **Trên Windows**: Người dùng mở trình duyệt kiểm tra nhưng quên chưa đóng trước khi bấm "Bắt đầu", hoặc tiến trình `chrome.exe` chạy ngầm giữ file `lockfile`.
+- **Đã khắc phục hoàn toàn trong hệ thống**:
+  1. **Tự động đóng tiến trình**: Khi người dùng đóng cửa sổ (dù trên macOS hay Windows), hệ thống tự động nhận biết không còn tab nào mở, lưu cookie và thoát hẳn tiến trình Chromium, gỡ bỏ lock file.
+  2. **Tự động giải phóng trước khi chạy**: Trước khi bất kỳ tác vụ tự động nào chạy, hệ thống sẽ tự động đóng các phiên mở tay, thu dọn lock file và tiến trình rác của profile đó.
+  3. **Đổi trạng thái trên giao diện**: Icon Mở profile trên web đổi sang màu xanh lục khi trình duyệt đang mở; bạn có thể bấm trực tiếp vào icon để đóng ngay lập tức.

@@ -11,21 +11,23 @@ import IconActionButton from './IconActionButton';
 const ProfileCardActions = React.memo(({
   profile,
   onOpen,
+  onClose,
   onStart,
   onOpenCookieModal
 }) => {
   const hasCookies = Boolean(profile.cookies && profile.cookies.trim());
   const uploading = profile.status === 'uploading';
+  const isBrowserOpen = Boolean(profile.is_browser_open);
 
   return (
     <div className="table-actions">
       <IconActionButton
         icon={<ExternalLink size={15} />}
-        onClick={() => onOpen(profile.id)}
-        title="Mở profile (Mở Chrome để đăng nhập hoặc kiểm tra)"
-        color="var(--text)"
-        bg="rgba(255, 255, 255, 0.05)"
-        border="var(--border)"
+        onClick={() => (isBrowserOpen && onClose ? onClose(profile.id) : onOpen(profile.id))}
+        title={isBrowserOpen ? 'Trình duyệt đang mở • Nhấp để đóng trình duyệt' : 'Mở profile (Mở Chrome để đăng nhập hoặc kiểm tra)'}
+        color={isBrowserOpen ? '#10b981' : 'var(--text)'}
+        bg={isBrowserOpen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)'}
+        border={isBrowserOpen ? 'rgba(16, 185, 129, 0.4)' : 'var(--border)'}
         size="32px"
       />
       <IconActionButton

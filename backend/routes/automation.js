@@ -23,6 +23,12 @@ import {
     addFavoriteMusic
 } from '../services/tiktok-automation.js';
 import { downloadAndPrepareVideo } from '../services/video-downloader.js';
+import {
+    closeProfileBrowser,
+    ensureProfileReadyForLaunch,
+    setupAutoCloseOnEmpty,
+    syncCookiesToDatabase
+} from '../services/browser-manager.js';
 
 const router = express.Router();
 
@@ -93,10 +99,22 @@ router.post('/open-profile', async (req, res) => {
     }
 
     if (manualBrowsers.has(profileId)) {
-        return res.json({ status: 'already_open', message: 'Browser is already open' });
+        const existingBrowser = manualBrowsers.get(profileId);
+        const openPages = existingBrowser.pages().filter(p => !p.isClosed());
+        if (openPages.length > 0) {
+            try {
+                await openPages[0].bringToFront();
+            } catch (e) {}
+            return res.json({ status: 'already_open', message: 'Browser is already open' });
+        } else {
+            // User closed the window on macOS/Windows, clean up dead context
+            await closeProfileBrowser(profile.id, profile.name);
+        }
     }
 
     try {
+        await ensureProfileReadyForLaunch(profile.id, profile.name);
+
         const userDataDir = path.join(PROFILES_DIR, profile.name);
         const browserOptions = buildBrowserLaunchOptions(profile, {
             log: (msg) => console.log(`[${profile.name}] ${msg}`)
@@ -107,15 +125,7 @@ router.post('/open-profile', async (req, res) => {
         manualBrowsers.set(profileId, browser);
 
         const syncCookies = async () => {
-            try {
-                const cookies = await browser.cookies();
-                if (Array.isArray(cookies) && cookies.length > 0) {
-                    const hasSession = cookies.some(c => c.name === 'sessionid' || c.name === 'sessionid_ss' || c.name === 'sid_tt');
-                    if (hasSession) {
-                        db.prepare('UPDATE profiles SET cookies = ? WHERE id = ?').run(JSON.stringify(cookies), profile.id);
-                    }
-                }
-            } catch (e) {}
+            await syncCookiesToDatabase(browser, profile.id);
         };
 
         const syncTimer = setInterval(syncCookies, 3000);
@@ -125,6 +135,9 @@ router.post('/open-profile', async (req, res) => {
             manualBrowsers.delete(profileId);
             console.log(`[${profile.name}] Manual browser closed`);
         });
+
+        // Auto-close persistent context when user closes the window on macOS or Windows
+        setupAutoCloseOnEmpty(browser, profile, syncTimer);
 
         const page = browser.pages().length > 0 ? browser.pages()[0] : await browser.newPage();
         page.on('framenavigated', () => {
@@ -137,6 +150,23 @@ router.post('/open-profile', async (req, res) => {
         console.error(`Failed to open browser for ${profile.name}:`, err);
         manualBrowsers.delete(profileId);
         res.status(500).json({ error: `Failed to launch browser: ${err.message}` });
+    }
+});
+
+// POST /api/close-profile
+router.post('/close-profile', async (req, res) => {
+    const { profileId } = req.body;
+    if (!profileId) return res.status(400).json({ error: 'Profile ID is required' });
+
+    const profile = db.prepare('SELECT * FROM profiles WHERE id = ?').get(profileId);
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    try {
+        await closeProfileBrowser(profile.id, profile.name);
+        res.json({ status: 'closed', profile: profile.name });
+    } catch (err) {
+        console.error(`Failed to close browser for ${profile.name}:`, err);
+        res.status(500).json({ error: `Failed to close browser: ${err.message}` });
     }
 });
 

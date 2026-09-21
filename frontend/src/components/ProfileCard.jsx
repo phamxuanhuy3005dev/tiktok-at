@@ -12,6 +12,7 @@ const ProfileCard = React.memo(React.forwardRef(({
   onToggleSelected,
   onDelete,
   onOpen,
+  onClose,
   onStart,
   onLoginTikTok,
   onStopLoginTikTok,
@@ -73,6 +74,7 @@ const ProfileCard = React.memo(React.forwardRef(({
       <ProfileCardActions
         profile={profile}
         onOpen={onOpen}
+        onClose={onClose}
         onStart={onStart}
         onOpenCookieModal={onOpenCookieModal}
       />

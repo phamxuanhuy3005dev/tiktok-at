@@ -21,7 +21,11 @@ function normalizeGroupId(value) {
 router.get('/profiles', (req, res) => {
     try {
         const profiles = db.prepare('SELECT * FROM profiles ORDER BY created_at DESC').all();
-        res.json(profiles);
+        const enriched = profiles.map(p => ({
+            ...p,
+            is_browser_open: manualBrowsers.has(p.id)
+        }));
+        res.json(enriched);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

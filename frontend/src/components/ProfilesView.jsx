@@ -32,6 +32,7 @@ const ProfilesView = ({
   toggleProfileSelectedForRun,
   deleteProfile,
   openProfile,
+  closeProfile,
   startLoginTikTok,
   stopLoginTikTok,
   loggingInProfiles = new Set(),
@@ -140,6 +141,7 @@ const ProfilesView = ({
               onToggleSelected={toggleProfileSelectedForRun}
               onDelete={deleteProfile}
               onOpen={openProfile}
+              onClose={closeProfile}
               onStart={startAutomation}
               onUpdateName={updateProfileName}
               onOpenCookieModal={openCookieModal}

@@ -11,6 +11,7 @@ import {
     loggingInProfiles,
     addingFavoriteMusicProfiles
 } from './tracker.js';
+import { ensureProfileReadyForLaunch } from './browser-manager.js';
 import {
     computeAutoIncrementTime,
     formatScheduleValue,
@@ -434,6 +435,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
         log: (msg) => console.log(`[${profile.name}] ${msg}`)
     });
 
+    await ensureProfileReadyForLaunch(profile.id, profile.name);
     const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
     await injectProfileCookies(browser, profile);
 
@@ -1203,6 +1205,7 @@ export async function runTikTokLogin(profile) {
     };
 
     const browserOptions = buildBrowserLaunchOptions(profile);
+    await ensureProfileReadyForLaunch(profile.id, profile.name);
     const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
 
     const session = {
@@ -1283,6 +1286,7 @@ export async function addFavoriteMusic(profile, searchTerm) {
     }
 
     const browserOptions = buildBrowserLaunchOptions(profile);
+    await ensureProfileReadyForLaunch(profile.id, profile.name);
     const browser = await chromium.launchPersistentContext(userDataDir, browserOptions);
     await injectProfileCookies(browser, profile);
     addingFavoriteMusicProfiles.add(profileId);

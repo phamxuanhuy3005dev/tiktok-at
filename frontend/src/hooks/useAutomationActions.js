@@ -81,6 +81,19 @@ export const useAutomationActions = ({
     }
   }, [setMessage]);
 
+  const closeProfile = useCallback(async (profileId) => {
+    try {
+      await axios.post('/api/close-profile', { profileId });
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'success', text: 'Browser closed for profile' });
+      }
+    } catch (err) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to close browser' });
+      }
+    }
+  }, [setMessage]);
+
   const startLoginTikTok = useCallback(async (profileId) => {
     try {
       await axios.post('/api/login-tiktok', { profileId });
@@ -197,6 +210,7 @@ export const useAutomationActions = ({
     syncProfilesStatus,
     startAutomation,
     openProfile,
+    closeProfile,
     startLoginTikTok,
     stopLoginTikTok,
     startBulkLogin,
