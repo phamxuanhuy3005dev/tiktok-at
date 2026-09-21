@@ -68,16 +68,42 @@ app.use('/api', systemRouter);
 app.use('/api', cookiesRouter);
 app.use('/api', automationRouter);
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve frontend static build if available
+const frontendDist = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      return res.sendFile(path.join(frontendDist, 'index.html'));
+    }
+    next();
+  });
+}
+
 // Start server
 app.listen(PORT, () => {
-  console.log(
-    `[Server] TikTok Automation Backend running at http://localhost:${PORT}`,
-  );
+  const url = `http://localhost:${PORT}`;
+  console.log(`[Server] TikTok Automation running at ${url}`);
+
+  if (process.env.AUTO_OPEN === 'true') {
+    const cmd = process.platform === 'darwin'
+      ? `open ${url}`
+      : process.platform === 'win32'
+      ? `start ${url}`
+      : `xdg-open ${url}`;
+    import('child_process').then(({ exec }) => {
+      exec(cmd, () => {});
+    });
+  }
 });
 
 export default app;

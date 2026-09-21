@@ -95,17 +95,38 @@ Script sẽ tự động tạo các video chuẩn 9:16 trong thư mục `dummy_v
 
 ---
 
-## 🏃‍♂️ Khởi Chạy Ứng Dụng
+## 🏃‍♂️ Khởi Chạy Ứng Dụng (Siêu Đơn Giản Cho Người Dùng)
 
-### Cách 1: Khởi động 1-Click (Khuyến nghị)
-Tại thư mục gốc của dự án:
-```bash
-chmod +x start.sh
-./start.sh
-```
-Script sẽ tự động kiểm tra port, giải phóng nếu bị chiếm dụng, và chạy đồng thời cả Backend (`http://localhost:3001`) lẫn Frontend (`http://localhost:3000`).
+### 💻 Dành Cho Người Dùng Windows
+1. Nhấp đúp chuột vào file **`Chay-Tren-Windows.bat`**.
+2. Script sẽ tự động:
+   - Kiểm tra Node.js (nếu chưa có sẽ hỗ trợ mở link tải hoặc cài tự động).
+   - Tự cài đặt thư viện và trình duyệt Playwright nếu chạy lần đầu.
+   - Tự động bật trình duyệt web đến giao diện ứng dụng tại: `http://localhost:3001`.
 
-### Cách 2: Khởi động Thủ Công từng phần
+### 🍎 Dành Cho Người Dùng macOS
+1. Nhấp đúp chuột vào file **`Chay-Tren-Mac.command`** trong Finder.
+2. Script sẽ tự động:
+   - Kiểm tra Node.js (hướng dẫn cài nếu thiếu).
+   - Chuẩn bị môi trường và tự động bật Safari/Chrome hiển thị giao diện tool tại: `http://localhost:3001`.
+
+---
+
+### 📦 Cách Đóng Gói (Chia Sẻ Cho Người Khác Dùng)
+Để gửi tool này cho bạn bè hoặc nhân sự sử dụng:
+1. Chạy lệnh build frontend sẵn 1 lần duy nhất:
+   ```bash
+   npm run build
+   ```
+2. Nén toàn bộ thư mục thành file `.zip` (Lưu ý: Bạn **không cần** kèm thư mục `frontend/node_modules`, `trash/`, hoặc các video tạm).
+3. Người nhận chỉ cần giải nén file `.zip` và:
+   - Trên **Windows**: Nhấp đúp `Chay-Tren-Windows.bat`.
+   - Trên **macOS**: Nhấp đúp `Chay-Tren-Mac.command`.
+   - Giao diện quản lý sẽ tự động mở lên trên trình duyệt của họ!
+
+---
+
+### 🛠 Dành Cho Lập Trình Viên (Chạy Thủ Công)
 
 **Terminal 1 (Backend Server):**
 ```bash
