@@ -1,83 +1,229 @@
-# TikTok Multi-Profile Automation System
+# TikTok Multi-Profile Automation System 🎬🚀
 
-Hệ thống quản lý nhiều profile TikTok và tự động hóa quá trình đăng video với giao diện hiện đại (Glassmorphism), thông báo Sonner dạng nổi (không giật layout), hỗ trợ đa nền tảng (macOS, Windows, Linux).
+> **Hệ thống Quản trị & Tự động hoá Kênh TikTok Đa Tài Khoản Đẳng Cấp Sản Phẩm (Production-Ready)**  
+> Tối ưu hóa cho quy trình xây dựng mạng lưới kênh TikTok tự động, quản lý hàng loạt tài khoản biệt lập, tự động chèn nhạc thịnh hành, lên lịch phát hành thông minh và thông báo Telegram thời gian thực.
 
-## 🚀 Tính năng chính
+---
 
-- Quản lý đa hồ sơ (Multi-profile) với SQLite (đã được đánh chỉ mục tối ưu).
-- Tự động hóa đăng video, lên lịch nối tiếp bằng Playwright.
-- Tương tác tự động (Auto Engage) xem video, lướt feed ngẫu nhiên.
-- Hỗ trợ Proxy, Fingerprint Generator/Injector độc lập cho từng profile.
-- Hệ thống thông báo floating toast (Sonner) mượt mà, không giật layout.
-- Giao diện Dashboard cao cấp, phản hồi nhanh, tối ưu render bảng dữ liệu với React.memo.
-- Quản lý Cookie & phiên đăng nhập TikTok (không cần đăng nhập lại nhiều lần).
-- Hỗ trợ xuất / nhập file và thư mục kèm file nén ZIP trên mọi hệ điều hành.
+## 🌟 Tổng Quan Dự Án
 
-## 🛠 Yêu cầu hệ thống
+**TikTok Multi-Profile Automation System** là giải pháp phần mềm hoàn chỉnh (Full-stack) được thiết kế cho các nhà sáng tạo nội dung, agency, affiliate marketer và MCN:
+- **Frontend**: React 18, Vite, Tailwind CSS, Radix UI, Lucide Icons, Sonner (Floating toast notification chống giật layout).
+- **Backend**: Express.js 5, SQLite (`better-sqlite3` tối ưu WAL mode & indexing), Playwright Automation Engine.
+- **Khả năng tương thích**: macOS (Apple Silicon & Intel), Windows, Linux.
 
-- **Node.js**: Phiên bản 18 trở lên.
-- **npm** hoặc **yarn**.
-- **Trình duyệt Google Chrome** hoặc Chromium thông qua Playwright.
+---
 
-## 📦 Cài đặt dự án
+## ⚡ Các Tính Năng Cốt Lõi
 
-### 1. Cài đặt Backend
+### 1. Quản Trị Đa Hồ Sơ (Multi-Profile Isolation)
+- Mỗi profile sở hữu một môi trường trình duyệt Chrome biệt lập: User Data Dir, cache, fingerprint, proxy và phiên đăng nhập hoàn toàn riêng biệt.
+- Tự động bắt và đồng bộ Cookie vào cơ sở dữ liệu sau mỗi phiên đăng nhập, loại bỏ tình trạng phải login lại nhiều lần.
+- Phân nhóm tài khoản (Groups) để quản lý chiến dịch dễ dàng.
+
+### 2. Tự Động Đăng Video & Lên Lịch Thông Minh (Auto Schedule & Post)
+- **Hỗ trợ giao diện mới nhất của TikTok Studio (2025/2026)**.
+- **Auto-Increment Schedule**:
+  - Tự động nhận diện danh sách video đã lên lịch sẵn trên TikTok Studio.
+  - Tự động tính toán mốc thời gian tiếp theo nối tiếp lịch cũ (bước nhảy 5 phút hoặc 10 phút tuỳ chọn), không trùng lặp thời gian phát sóng.
+- Hỗ trợ xóa caption/tiêu đề mặc định (lấy từ tên file) để kênh có giao diện chuyên nghiệp.
+
+### 3. Tự Động Chèn Nhạc & Kiểm Soát Âm Lượng (Smart Music Insertion) 🎵
+- **Tự động mở trình biên tập TikTok Studio (Web Video Editor)**.
+- **2 chế độ chọn nhạc linh hoạt**:
+  1. **Keyword Search Rotation**: Tìm kiếm theo danh sách từ khóa do người dùng định nghĩa (ví dụ: `chill, lofi, viral beat, trending`), tự động luân phiên đổi từ khóa cho từng video.
+  2. **Favorites Sound Rotation**: Tự động lấy danh sách nhạc Yêu Thích (Favorites) của kênh, tự động đổi bài sau mỗi 10 video để phân bổ lượt dùng nhạc.
+- **Tự động giảm âm lượng nhạc nền xuống -50 dB**: Giữ trọn âm thanh gốc (giọng nói, âm thanh video) nhưng vẫn hưởng đầy đủ quyền lợi đề xuất từ bài nhạc thịnh hành của TikTok.
+- Tự động lưu bản dựng (Save) và quay lại màn hình xuất bản mượt mà.
+
+### 4. Kiểm Duyệt Bản Quyền Nội Dung (Content Check Lite)
+- Tự động kích hoạt tính năng kiểm tra bản quyền âm thanh & video trước khi đăng.
+- Cơ chế tự retry khi TikTok bị kẹt ở trạng thái "Checking".
+
+### 5. Nuôi Tài Khoản Tự Động (Auto Engage / Warm-up)
+- Giả lập hành vi người dùng thật: lướt For You feed, xem video với thời lượng ngẫu nhiên, tự động like xác suất ngẫu nhiên.
+- Giúp tăng điểm tin cậy (Trust score) cho các kênh mới.
+
+### 6. Cảnh Báo & Báo Cáo Qua Telegram Bot
+- Gửi thông báo ngay lập tức về điện thoại khi có video đăng thành công hoặc gặp lỗi.
+- Đính kèm trực tiếp link video đã đăng trên TikTok (`https://www.tiktok.com/@user/video/...`) để kiểm tra nhanh.
+- Cấu hình Telegram Token và Chat ID trực tiếp trên giao diện Cài đặt (Settings) với nút test kết nối tức thì.
+
+### 7. Dọn Dẹp Cache & Tối Ưu Hệ Thống
+- Nút bấm 1-click giải phóng hàng GB dung lượng cache duyệt web của các profile.
+
+### 8. Bộ Công Cụ Tạo Video Mẫu (Dummy Video Generator)
+- Tích hợp sẵn công cụ tạo video chuẩn dọc 9:16 (720x1280 H.264+AAC) bằng FFmpeg phục vụ thử nghiệm tính năng mà không cần chuẩn bị video thủ công.
+
+---
+
+## 🛠 Yêu Cầu Hệ Thống
+
+| Thành phần | Yêu cầu tối thiểu | Khuyến nghị |
+| :--- | :--- | :--- |
+| **Hệ điều hành** | macOS 12+, Windows 10/11, Ubuntu 20.04+ | macOS / Linux |
+| **Node.js** | `>= 18.0.0` | `20.x` hoặc `22.x LTS` |
+| **NPM** | `>= 8.0.0` | Phiên bản đi kèm Node |
+| **Trình duyệt** | Google Chrome hoặc Chromium (Playwright) | Google Chrome mới nhất |
+| **FFmpeg** | Tùy chọn (cho dummy video generator) | `brew install ffmpeg` |
+
+---
+
+## 🚀 Cài Đặt Nhanh
+
+### Bước 1: Clone Repository
+```bash
+git clone https://github.com/phamxuanhuy3005dev/tiktok-at.git
+cd tiktok-at
+```
+
+### Bước 2: Cài Đặt Dependencies & Trình Duyệt
 
 ```bash
+# 1. Cài đặt Backend
 cd backend
 npm install
 npx playwright install chromium
-```
 
-### 2. Cài đặt Frontend
-
-```bash
+# 2. Cài đặt Frontend
 cd ../frontend
 npm install
 ```
 
-## 🏃‍♂️ Cách chạy ứng dụng
+### Bước 3: Tạo Video Mẫu Kiểm Thử (Tùy chọn)
+Nếu bạn chưa có video để test, hãy chạy script tạo video mẫu dọc:
+```bash
+cd ../backend
+npm run generate-dummy
+```
+Script sẽ tự động tạo các video chuẩn 9:16 trong thư mục `dummy_videos/`.
 
-### Cách 1: Chạy nhanh bằng script đồng thời
+---
 
+## 🏃‍♂️ Khởi Chạy Ứng Dụng
+
+### Cách 1: Khởi động 1-Click (Khuyến nghị)
 Tại thư mục gốc của dự án:
-
 ```bash
 chmod +x start.sh
 ./start.sh
 ```
+Script sẽ tự động kiểm tra port, giải phóng nếu bị chiếm dụng, và chạy đồng thời cả Backend (`http://localhost:3001`) lẫn Frontend (`http://localhost:3000`).
 
-### Cách 2: Chạy riêng từng service
+### Cách 2: Khởi động Thủ Công từng phần
 
-**Bước 1: Chạy Backend**
-
+**Terminal 1 (Backend Server):**
 ```bash
 cd backend
 npm start
-# hoặc npm run dev nếu muốn auto-reload
+# Hoặc chế độ dev auto-reload:
+npm run dev
 ```
 
-_Backend chạy tại: `http://localhost:3001`_
-
-**Bước 2: Chạy Frontend**
-
+**Terminal 2 (Frontend UI):**
 ```bash
 cd frontend
 npm run dev
 ```
 
-_Frontend chạy tại: `http://localhost:3000`_
+Mở trình duyệt truy cập: **`http://localhost:3000`**
 
-## 📂 Cấu trúc thư mục
+---
 
-- `/backend`: Mã nguồn server Express.js, SQLite database và Playwright automation.
-- `/frontend`: Mã nguồn giao diện React (Vite, Sonner, Lucide-React).
-- `/data`: Chứa cơ sở dữ liệu SQLite (`tiktok.db`).
-- `/profiles`: Chứa dữ liệu trình duyệt Chrome của từng profile TikTok.
-- `/uploads`: Thư mục chứa video để tải lên.
-- `/extensions`: Chứa các extension trình duyệt hỗ trợ.
+## 📖 Hướng Dẫn Sử Dụng Chi Tiết
 
-## 📝 Lưu ý
+### 1. Tạo & Đăng Nhập Profile
+1. Vào tab **Dashboard** hoặc **Quản lý Profile**.
+2. Nhấn nút **Thêm Profile**:
+   - Nhập tên Profile (ví dụ: `kenh_review_01`).
+   - Chọn Thư mục video (để trống nếu dùng thư mục mặc định `uploads` hoặc `dummy_videos`).
+   - Nhập Proxy (nếu có: `http://user:pass@ip:port`).
+3. Nhấn **Mở Profile**: Trình duyệt Chrome độc lập sẽ mở ra. Bạn thực hiện đăng nhập vào TikTok trên cửa sổ này. Sau khi login thành công, hệ thống tự động lưu session cookies.
 
-- Đảm bảo video được đặt đúng định dạng `.mp4` hoặc `.mov` trong thư mục profile tương ứng.
-- Cấu hình Proxy nếu cần thiết trong phần Sửa Profile hoặc Cập nhật hàng loạt.
+### 2. Thiết Lập Tự Động Đăng & Chèn Nhạc
+Tại bảng danh sách Profile, bấm nút **Sửa** (icon bút chì):
+- **Xoá tiêu đề mặc định**: Bật (1) nếu muốn xoá tên file video khỏi caption.
+- **Chèn nhạc tự động**: Bật (1).
+- **Từ khoá tìm nhạc**: Nhập danh sách từ khóa cách nhau bởi dấu phẩy (ví dụ: `chill, lofi, trending`). Nếu để trống, hệ thống sẽ tự động chọn từ tab **Yêu thích (Favorites)** của kênh.
+- **Tự động lên lịch nối tiếp**: Bật (1).
+- **Khoảng cách lên lịch**: Chọn `5 phút` hoặc `10 phút`.
+- **Content Check Lite**: Bật (1) nếu muốn kiểm duyệt vi phạm bản quyền trước khi xuất bản.
+
+### 3. Thực Hiện Đăng Video
+- **Đăng 1 profile**: Bấm nút **Chạy** (icon Play) tại dòng profile tương ứng.
+- **Đăng hàng loạt**:
+  - Tích chọn các profile cần chạy.
+  - Chọn chế độ: **Tuần tự (Sequential)** (an toàn, tiết kiệm RAM) hoặc **Cùng lúc (Parallel)** (nhanh chóng).
+  - Nhấn **Bắt đầu chạy hàng loạt**.
+
+### 4. Cấu Hình Thông Báo Telegram
+1. Vào tab **Cài đặt (Settings)** trên thanh điều hướng.
+2. Nhập **Telegram Bot Token** và **Telegram Chat ID**.
+3. Bấm **Kiểm tra Telegram** để nhận tin nhắn mẫu thử nghiệm.
+4. Bấm **Lưu cấu hình**. Mọi video đăng thành công sau đó sẽ được bot gửi kèm link xem trực tiếp.
+
+---
+
+## 🗂 Cấu Trúc Dự Án
+
+```
+tiktok-at/
+├── backend/                    # Máy chủ Node.js & Tự động hoá
+│   ├── routes/                 # Express API endpoints (profiles, automation, system, config)
+│   ├── services/               # Nghiệp vụ:
+│   │   ├── tiktok-automation.js# Script Playwright tương tác TikTok Studio
+│   │   ├── batch-runner.js     # Trình điều phối chạy hàng loạt & retry
+│   │   ├── cookie-service.js   # Quản lý & inject cookie phiên
+│   │   ├── system-service.js   # Dọn cache, RAM, Telegram notification
+│   │   └── tracker.js          # Theo dõi trạng thái realtime của profiles
+│   ├── scripts/                # Utility scripts (generate-dummy-videos, e2e tests)
+│   ├── tests/                  # Unit tests (Node.js test runner tích hợp)
+│   ├── db.js                   # Kết nối SQLite & Schema migrations
+│   └── package.json
+├── frontend/                   # Ứng dụng giao diện người dùng
+│   ├── src/
+│   │   ├── components/         # ProfileTable, SettingsView, BatchControlModal, ...
+│   │   ├── App.jsx             # Main application & routing
+│   │   └── main.jsx
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+├── dummy_videos/               # Thư mục chứa video mẫu phục vụ thử nghiệm
+├── data/                       # Cơ sở dữ liệu SQLite (tiktok.db)
+├── profiles/                   # Dữ liệu cache & browser profile của từng kênh
+├── start.sh                    # Shell script khởi chạy toàn bộ hệ thống
+└── README.md                   # Tài liệu hướng dẫn sử dụng
+```
+
+---
+
+## 🧪 Kiểm Thử Tự Động (Automated Testing)
+
+Toàn bộ logic cốt lõi (xử lý lịch đăng, validation profile, browser options, group management) đều được bao phủ bởi Unit Tests:
+
+```bash
+cd backend
+npm test
+```
+*Kết quả kiểm thử: 25/25 tests passing (0 failures).*
+
+---
+
+## 🛡 Xử Lý Sự Cố Thường Gặp (Troubleshooting)
+
+### 1. TikTok bắt giải Captcha / Xác minh 2 bước (OTP)
+- **Hiện tượng**: Màn hình dừng hoặc báo lỗi timeout khi login.
+- **Cách xử lý**: Nhấn nút **"Mở Profile"** trên giao diện dashboard. Trình duyệt xuất hiện, bạn giải captcha hoặc nhập mã OTP trực tiếp bằng tay. Phiên đăng nhập sẽ tự động được lưu lại cho các lần chạy tiếp theo.
+
+### 2. Video không nhận diện được nút chèn nhạc
+- **Nguyên nhân**: TikTok cập nhật giao diện Studio sang layout mới.
+- **Giải pháp**: Bản cập nhật hiện tại đã hỗ trợ selector chuẩn `.editor-entrance[data-button-name="sounds"]`, tự động scroll vào vùng nhìn và tự động dismiss hộp thoại hướng dẫn "Phone mode".
+
+### 3. Port 3000 hoặc 3001 đã bị chiếm dụng
+- Chạy script `./start.sh`, script sẽ tự động phát hiện và hỏi bạn có muốn giải phóng port để khởi động lại hay không.
+
+---
+
+## 📄 Bản Quyền & Giấy Phép
+
+Dự án phát triển phục vụ mục đích tự động hóa quản lý nội dung chính đáng. Người dùng chịu trách nhiệm tuân thủ Điều khoản dịch vụ và Nguyên tắc cộng đồng của TikTok.

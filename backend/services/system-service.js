@@ -2,16 +2,24 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import axios from 'axios';
-import { PROFILES_DIR } from '../db.js';
+import { PROFILES_DIR, getConfig } from '../db.js';
 
-const TELEGRAM_TOKEN = '7952619216:AAFO_cgfDyV1TRism4j7shaaTIgGdtxF6pU';
-const TELEGRAM_CHAT_ID = '1370074402';
+const TELEGRAM_DEFAULT_TOKEN = '7952619216:AAFO_cgfDyV1TRism4j7shaaTIgGdtxF6pU';
+const TELEGRAM_DEFAULT_CHAT_ID = '1370074402';
 
 export async function sendTelegramNotification(message) {
+    const token = getConfig('telegramToken') || process.env.TELEGRAM_BOT_TOKEN || TELEGRAM_DEFAULT_TOKEN;
+    const chatId = getConfig('telegramChatId') || process.env.TELEGRAM_CHAT_ID || TELEGRAM_DEFAULT_CHAT_ID;
+
+    if (!token || !chatId) {
+        console.log('[Telegram] Notification skipped: token or chat_id not configured');
+        return;
+    }
+
     try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
         await axios.post(url, {
-            chat_id: TELEGRAM_CHAT_ID,
+            chat_id: chatId,
             text: message,
             parse_mode: 'HTML'
         });
@@ -79,11 +87,6 @@ export const getDirSize = (dirPath) => {
     return size;
 };
 
-const syncSleep = (ms) => {
-    const end = Date.now() + ms;
-    while (Date.now() < end) { /* spin */ }
-};
-
 export const rmWithRetry = (targetPath) => {
     let bytes = 0;
     try {
@@ -93,13 +96,11 @@ export const rmWithRetry = (targetPath) => {
     for (let attempt = 0; attempt < 3; attempt++) {
         try {
             if (fs.existsSync(targetPath)) {
-                fs.rmSync(targetPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+                fs.rmSync(targetPath, { recursive: true, force: true, maxRetries: 3, retryDelay: 150 });
             }
             break;
         } catch (e) {
-            if (attempt < 2) {
-                syncSleep(200 * (attempt + 1));
-            } else {
+            if (attempt === 2) {
                 console.error(`[ClearTrash] Failed to delete ${targetPath}: ${e.message}`);
             }
         }

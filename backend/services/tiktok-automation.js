@@ -162,18 +162,6 @@ export async function fillScheduleInput(page, inputMeta, value, label, log) {
 
 export const dismissPopups = async (page) => {
     if (!page) return false;
-    try {
-        const draftBanner = await page.$('div:has-text("wasn\'t saved"):has(button:has-text("Discard")), div:has-text("Continue editing?"):has(button:has-text("Discard"))');
-        if (draftBanner && await draftBanner.isVisible()) {
-            const discardBtn = await page.$('button:has-text("Discard")');
-            if (discardBtn && await discardBtn.isVisible()) {
-                await discardBtn.click();
-                console.log('[dismissPopups] Dismissed draft banner "wasn\'t saved" -> Discard');
-                await page.waitForTimeout(500);
-                return true;
-            }
-        }
-    } catch (e) {}
 
     const modalSelectors = [
         'div[role="dialog"]',
@@ -194,6 +182,7 @@ export const dismissPopups = async (page) => {
                     const text = await modal.innerText().catch(() => '');
                     if (!text.trim()) continue;
 
+                    // 1. "Turn on automatic content checks" popup -> Always click Cancel
                     if (text.includes("automatic content checks") || text.includes("content checks") || text.includes("Turn on automatic")) {
                         const cancelBtn = await modal.$('button:has-text("Cancel")');
                         if (cancelBtn && await cancelBtn.isVisible()) {
@@ -203,30 +192,39 @@ export const dismissPopups = async (page) => {
                         }
                     }
 
+                    // 2. "Exit / Leave" confirmation popup -> Always Stay/Cancel, NEVER Exit
                     if (text.includes("Are you sure you want to exit") || text.includes("want to leave") || text.includes("Leave page")) {
-                        const cancelBtn = await modal.$('button:has-text("Cancel"), button:has-text("Stay"), button:has-text("No")');
-                        if (cancelBtn && await cancelBtn.isVisible()) {
-                            await cancelBtn.click();
-                            console.log('[dismissPopups] Dismissed "exit/leave" confirmation popup -> Cancel/Stay');
+                        const stayBtn = await modal.$('button:has-text("Cancel"), button:has-text("Stay"), button:has-text("No")');
+                        if (stayBtn && await stayBtn.isVisible()) {
+                            await stayBtn.click();
+                            console.log('[dismissPopups] Dismissed "exit/leave" popup -> Cancel/Stay');
                             return true;
                         }
                     }
 
+                    // 3. "Discard this post?" popup -> Always click "Not now" or "Cancel", NEVER Discard!
                     if (text.includes("Discard this post") || text.includes("discarded permanently")) {
-                        const notNowBtn = await modal.$('button:has-text("Not now")');
+                        const notNowBtn = await modal.$('button:has-text("Not now"), button:has-text("Cancel")');
                         if (notNowBtn && await notNowBtn.isVisible()) {
                             await notNowBtn.click();
                             console.log('[dismissPopups] Dismissed "Discard this post?" popup -> Not now');
                             return true;
                         }
-                        const discardBtn = await modal.$('button:has-text("Discard")');
-                        if (discardBtn && await discardBtn.isVisible()) {
-                            await discardBtn.click();
-                            console.log('[dismissPopups] Dismissed "Discard this post?" popup -> Discard');
+                        // Do NOT click Discard here!
+                        continue;
+                    }
+
+                    // 4. "Phone mode" editor tutorial modal -> Click "Got it"
+                    if (text.includes("Phone mode")) {
+                        const gotItBtn = await modal.$('button:has-text("Got it")');
+                        if (gotItBtn && await gotItBtn.isVisible()) {
+                            await gotItBtn.click();
+                            console.log('[dismissPopups] Dismissed "Phone mode" tutorial modal -> Got it');
                             return true;
                         }
                     }
 
+                    // 5. Generic benign buttons inside the modal (excluding Discard / Exit / Post)
                     const genericBtnSelectors = [
                         'button:has-text("Got it")',
                         'button:has-text("Allow")',
@@ -240,7 +238,7 @@ export const dismissPopups = async (page) => {
                         const btn = await modal.$(btnSel);
                         if (btn && await btn.isVisible()) {
                             await btn.click();
-                            console.log(`[dismissPopups] Dismissed generic popup -> ${btnSel}`);
+                            console.log(`[dismissPopups] Dismissed generic modal -> ${btnSel}`);
                             return true;
                         }
                     }
@@ -302,36 +300,26 @@ export async function dismissOnboardingModals(page, log) {
                 }
             }
 
-            const soundGuides = document.querySelectorAll('[class*="DivGuideContainer"], [class*="GuideContainer"]');
-            for (const sg of soundGuides) {
-                const rect = sg.getBoundingClientRect();
-                const style = window.getComputedStyle(sg);
-                if (rect.width > 50 && rect.height > 20 &&
-                    style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
-                    found.push({ type: 'sound-guide', buttons: [] });
-                    break;
-                }
-            }
-
             return found;
         });
 
         if (detection.length === 0) return;
 
-        log(`Detected ${detection.length} onboarding modal(s): ${detection.map(d => d.type + '(' + (d.buttons ? d.buttons.join(',') : '') + ')').join('; ')}`);
+        if (log) log(`Detected ${detection.length} onboarding modal(s): ${detection.map(d => d.type + '(' + (d.buttons ? d.buttons.join(',') : '') + ')').join('; ')}`);
 
-        // Handle TUXModal Cancel/Dismiss
+        // Handle TUXModal Cancel/Dismiss (never Discard)
         try {
             const tuxCancel = await page.locator('div.TUXModal button:has-text("Cancel"), div.TUXModal button:has-text("No"), div.TUXModal button:has-text("Not now")').first();
             if (await tuxCancel.isVisible({ timeout: 500 })) {
                 await tuxCancel.click({ force: true });
-                log('Dismissed TUXModal via Cancel button.');
+                if (log) log('Dismissed TUXModal via Cancel button.');
                 await page.waitForTimeout(300);
             }
         } catch (e) {}
 
-        // Handle Tutorial Tooltips
+        // Handle Tutorial Tooltips & Joyride modals
         const tooltipDismissSelectors = [
+            'div:has-text("Phone mode") button:has-text("Got it")',
             '[class*="tutorial-tooltip"] button:has-text("Got it")',
             '[class*="tutorial-tooltip"] button:has-text("Next")',
             '[class*="tutorial-tooltip"] button:has-text("Close")',
@@ -343,6 +331,7 @@ export async function dismissOnboardingModals(page, log) {
             '[class*="editor-guide"] button:has-text("Next")',
             '[class*="joyride"] button:has-text("Got it")',
             '[class*="joyride"] button:has-text("Next")',
+            'button:has-text("Got it")',
         ];
 
         for (const sel of tooltipDismissSelectors) {
@@ -350,34 +339,33 @@ export async function dismissOnboardingModals(page, log) {
                 const btn = page.locator(sel).first();
                 if (await btn.isVisible({ timeout: 300 })) {
                     await btn.click({ force: true });
-                    log(`Dismissed tutorial tooltip via: ${sel}`);
+                    if (log) log(`Dismissed tutorial tooltip via: ${sel}`);
                     await page.waitForTimeout(300);
                 }
             } catch (e) {}
         }
 
-        // Close generic modal buttons
-        const genericSelectors = [
-            'button:has-text("Turn off")',
-            'button:has-text("Discard")',
-            'button:has-text("Stay")',
+        // Safe generic buttons (strictly excludes Discard)
+        const safeModalSelectors = [
+            'div[role="dialog"] button:has-text("Turn off")',
+            'div[role="dialog"] button:has-text("Stay")',
         ];
-        for (const sel of genericSelectors) {
+        for (const sel of safeModalSelectors) {
             try {
                 const btn = page.locator(sel).first();
                 if (await btn.isVisible({ timeout: 300 })) {
                     await btn.click({ force: true });
-                    log(`Dismissed modal via generic button: ${sel}`);
+                    if (log) log(`Dismissed modal via safe button: ${sel}`);
                     await page.waitForTimeout(300);
                 }
             } catch (e) {}
         }
     } catch (err) {
-        log(`Error dismissing onboarding modals: ${err.message}`);
+        if (log) log(`Error dismissing onboarding modals: ${err.message}`);
     }
 }
 
-export async function checkExistingScheduledTime(page, log, maxAttempts = 5) {
+export async function checkExistingScheduledTime(page, log, maxAttempts = 2) {
     const manageUrl = 'https://www.tiktok.com/tiktokstudio/content';
     log(`Checking for existing scheduled videos at ${manageUrl}...`);
 
@@ -560,6 +548,16 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 throw new Error('Upload page components not found. Page might be too slow or blocked.');
             }
 
+            const screenshotDir = process.env.TIKTOK_SCREENSHOT_DIR;
+            const takeScreenshot = async (name) => {
+                if (!screenshotDir) return;
+                try {
+                    const outPath = path.join(screenshotDir, `${name}.png`);
+                    await page.screenshot({ path: outPath });
+                    log(`Saved screenshot: ${outPath}`);
+                } catch (_) {}
+            };
+
             log(`Selecting file...`);
             let uploaded = false;
 
@@ -656,32 +654,33 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 // Dismiss popups & tooltips that appeared after video upload completion
                 await dismissOnboardingModals(page, log);
                 await dismissPopups(page);
+                await takeScreenshot('step1_video_uploaded');
             } catch (e) {
                 log(`Wait for upload completion timed out or failed: ${e.message}`);
             }
 
-            // --- NEW TASKS: Clear Title & Add Sound ---
+            // --- TASKS: Clear Title & Add Sound ---
             try {
                 log(`Waiting for upload UI components...`);
-                await page.waitForSelector('.video-info-container, textarea, .DraftEditor-root, button:has-text("Edit video"), [data-button-name="sounds"], button:has-text("Post")', { timeout: 60000 });
-                await page.waitForTimeout(5000);
+                await page.waitForSelector('.video-info-container, textarea, .DraftEditor-root, .editor-entrance, [data-button-name="sounds"], button:has-text("Post")', { timeout: 60000 });
+                await page.waitForTimeout(3000);
 
                 const shouldRemoveTitle = Number(profile.remove_title) === 1;
                 if (shouldRemoveTitle) {
                     log(`Task 1: Clearing title/caption...`);
-                    const captionSelectors = ['textarea', '.DraftEditor-root', '[role="textbox"]', '[contenteditable="true"]', '.public-DraftEditor-content', '[data-e2e="caption-edit-container"]'];
+                    const captionSelectors = ['.public-DraftEditor-content', '[contenteditable="true"]', 'textarea', '[role="textbox"]', '[data-e2e="caption-edit-container"]'];
                     for (const sel of captionSelectors) {
                         try {
                             const caption = await page.waitForSelector(sel, { timeout: 5000, state: 'visible' }).catch(() => null);
                             if (caption) {
                                 log(`Found caption field: ${sel}. Clearing text...`);
                                 await caption.focus();
-                                await caption.click({ clickCount: 3 });
-                                await page.keyboard.press('Control+A');
-                                await page.keyboard.press('Meta+A');
+                                const selectAllKey = process.platform === 'darwin' ? 'Meta+A' : 'Control+A';
+                                await page.keyboard.press(selectAllKey);
                                 await page.keyboard.press('Backspace');
-                                await page.waitForTimeout(500);
+                                await page.waitForTimeout(300);
                                 log(`Caption clearing attempt finished.`);
+                                break;
                             }
                         } catch (e) { }
                     }
@@ -690,197 +689,158 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 }
             } catch (e) {
                 log(`Clear title failed: ${e.message}`);
-                await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_task_fail.png`) }).catch(() => null);
             }
             // --- END CLEAR TITLE ---
 
             // --- TASK: Wait for video processing to complete & Add Sound ---
-            // TikTok now requires video processing to finish before the edit sound button
-            // becomes enabled. We wait for the sounds button to be visible and not disabled.
             const useSetMusic = Number(profile.set_music) === 1;
             if (useSetMusic) {
                 try {
-                    let soundsBtn = await page.$('button[data-button-name="sounds"]').catch(() => null);
+                    log(`Waiting for video upload to settle before opening Sounds editor...`);
+                    const soundsSelector = '.editor-entrance[data-button-name="sounds"], button[data-button-name="sounds"]';
+                    const soundsLocator = page.locator(soundsSelector).first();
 
-                    if (soundsBtn) {
+                    let soundsVisible = false;
+                    for (let waitSec = 0; waitSec < 20; waitSec++) {
+                        await page.evaluate(() => {
+                            const btn = document.querySelector('.editor-entrance[data-button-name="sounds"], [data-button-name="sounds"]');
+                            if (btn) btn.scrollIntoView({ block: 'center' });
+                        }).catch(() => null);
+
+                        if (await soundsLocator.isVisible({ timeout: 1000 }).catch(() => false)) {
+                            soundsVisible = true;
+                            break;
+                        }
+                        await page.waitForTimeout(1000);
+                        await dismissPopups(page);
+                    }
+
+                    if (soundsVisible) {
                         log(`Opening Sounds panel...`);
-                        await soundsBtn.click();
-                        await page.waitForTimeout(3000); // Wait for panel to open
+                        await soundsLocator.click({ force: true });
+                        await page.waitForTimeout(3000);
 
-                        // Screenshot before tab click
-                        await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_before_fav_click.png`) }).catch(() => null);
-
-                        // Refined selector using exact attribute provided by user
-                        const favTab = 'button[role="tab"][aria-controls="panel-favorites"], button[role="tab"]:has-text("Favorites")';
-                        log(`Waiting for Favorites tab: ${favTab}`);
-
-                        try {
-                            const tab = await page.waitForSelector(favTab, { timeout: 5000, state: 'visible' });
-                            if (tab) {
-                                log(`Found tab. Clicking via evaluate...`);
-                                await tab.evaluate(el => el.click());
-                            }
-                        } catch (e) {
-                            log(`Failed to find favorites tab: ${e.message}`);
+                        // Dismiss any "Phone mode" tutorial modal that appears in the editor
+                        const phoneModeGotIt = page.locator('div:has-text("Phone mode") button:has-text("Got it"), button:has-text("Got it")').first();
+                        if (await phoneModeGotIt.isVisible({ timeout: 3000 }).catch(() => false)) {
+                            log(`Dismissing editor Phone mode dialog...`);
+                            await phoneModeGotIt.click().catch(() => null);
+                            await page.waitForTimeout(1000);
                         }
 
-                        // Wait for Favorites panel content to actually load (not just a blind 3s delay)
-                        log(`Tab click done. Waiting for Favorites panel content to load...`);
-                        let favContentLoaded = false;
-                        try {
-                            // Verify the tab is actually selected
-                            await page.waitForSelector(
-                                'button[role="tab"][aria-selected="true"][aria-controls="panel-favorites"]',
-                                { timeout: 8000 }
-                            ).catch(() => log('Favorites tab aria-selected check timed out, proceeding anyway.'));
-
-                            // Wait for at least one music item to appear inside the favorites panel
-                            const favItemSelectors = [
-                                '#panel-favorites div[class*="ListItem"]',
-                                '#panel-favorites div[role="listitem"]',
-                                '#panel-favorites .music-item',
-                                '#panel-favorites [data-item-id]',
-                                'div[class*="MusicPanel"] div[class*="ListItem"]',
-                                'div[class*="MusicPanel"] div[role="listitem"]',
-                            ];
-                            for (const sel of favItemSelectors) {
-                                const item = await page.waitForSelector(sel, { timeout: 4000, state: 'visible' }).catch(() => null);
-                                if (item) {
-                                    log(`Favorites content loaded (found item via ${sel}).`);
-                                    favContentLoaded = true;
-                                    break;
-                                }
-                            }
-                            if (!favContentLoaded) {
-                                log('WARNING: Favorites panel content did not load after tab click. Proceeding with caution...');
-                            }
-                        } catch (e) {
-                            log(`Error waiting for favorites content: ${e.message}`);
-                        }
-
-                        // Screenshot after tab click + content wait
-                        await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_after_fav_click.png`) }).catch(() => null);
-
-                        // Rotate music selection: every 10 uploads, pick the next favorite music
-                        log(`Looking for Plus button in Favorites panel list...`);
+                        await takeScreenshot('step2_sounds_opened');
 
                         let soundAdded = false;
-                        try {
-                            // 1. Try to find the panel or the list container
-                            const listSelectors = [
-                                '#panel-favorites',
-                                '[aria-controls="panel-favorites"] ~ div',
-                                '.music-list',
-                                '.MusicPanel__list',
-                                'div[class*="MusicPanel"]'
-                            ];
+                        const hasMusicSearch = profile.music_search && profile.music_search.trim();
 
-                            let listContainer = null;
-                            for (const sel of listSelectors) {
-                                const found = await page.$(sel);
-                                if (found && await found.isVisible()) {
-                                    listContainer = found;
-                                    log(`Found list container via ${sel}`);
-                                    break;
-                                }
-                            }
+                        if (hasMusicSearch) {
+                            // Chế độ 1: Tìm kiếm theo danh sách từ khóa
+                            const keywords = profile.music_search.split(',').map(k => k.trim()).filter(Boolean);
+                            const currentKeyword = keywords[uploadedCount % keywords.length];
+                            log(`Search music mode: searching for "${currentKeyword}" (${(uploadedCount % keywords.length) + 1}/${keywords.length})...`);
 
-                            // 2. Find ALL music items (not just the first one)
-                            const itemSelectors = ['div[class*="ListItem"]', 'div[class*="item"]', 'div[role="listitem"]', '.music-item'];
-                            let allItems = [];
-                            if (listContainer) {
-                                for (const sel of itemSelectors) {
-                                    const items = await listContainer.$$(sel);
-                                    const visibleItems = [];
-                                    for (const item of items) {
-                                        if (await item.isVisible()) {
-                                            visibleItems.push(item);
-                                        }
-                                    }
-                                    if (visibleItems.length > 0) {
-                                        allItems = visibleItems;
-                                        log(`Found ${allItems.length} music items via ${sel}`);
-                                        break;
-                                    }
-                                }
-                            }
+                            const searchInput = page.locator('input.TextInput__input[placeholder*="Search sounds" i], input[placeholder*="Search sounds" i]').first();
+                            if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+                                await searchInput.click();
+                                const selectAllKey = process.platform === 'darwin' ? 'Meta+A' : 'Control+A';
+                                await page.keyboard.press(selectAllKey);
+                                await page.keyboard.press('Backspace');
+                                await page.keyboard.type(currentKeyword, { delay: 40 });
+                                await page.keyboard.press('Enter');
+                                await page.waitForTimeout(3000);
 
-                            // 3. Calculate which music to pick: rotate every 10 uploads
-                            const totalMusicItems = allItems.length;
-                            const targetMusicIndex = totalMusicItems > 0
-                                ? Math.floor(uploadedCount / 10) % totalMusicItems
-                                : 0;
-                            const targetItem = totalMusicItems > 0 ? allItems[targetMusicIndex] : null;
-
-                            if (totalMusicItems > 0) {
-                                log(`Music rotation: video #${uploadedCount + 1} â†’ music #${targetMusicIndex + 1}/${totalMusicItems} (every 10 videos switch)`);
-                            }
-
-                            // 4. Find plus icon inside the target item
-                            if (targetItem) {
-                                const icon = await targetItem.$('[data-icon="plus-bold"]');
-                                if (icon) {
-                                    log(`Found plus icon inside music item #${targetMusicIndex + 1}. Finding parent button...`);
-                                    const parentButton = await icon.evaluateHandle(el => el.closest('button') || el);
-                                    await parentButton.scrollIntoViewIfNeeded();
-                                    await parentButton.click({ force: true });
-                                    log(`Favorite sound added via item-specific parent button (music #${targetMusicIndex + 1}).`);
+                                // Locate round red plus button in search results
+                                const searchPlusBtns = page.locator('.Button__root--shape-rounded, button[class*="Button__root--shape-rounded"]');
+                                const count = await searchPlusBtns.count();
+                                if (count > 0) {
+                                    log(`Found ${count} sound result(s) for "${currentKeyword}". Adding top sound...`);
+                                    await searchPlusBtns.first().click({ force: true });
                                     soundAdded = true;
-
-                                    // After sound is added, enter -50 in the PropSettingInput
-                                    log(`Waiting for PropSettingInput to appear...`);
-                                    await page.waitForTimeout(1500);
-                                    const propInput = await page.waitForSelector(
-                                        'input.PropSettingInput__input, input[class*="PropSettingInput"]',
-                                        { timeout: 8000, state: 'visible' }
-                                    ).catch(() => null);
-                                    if (propInput) {
-                                        log(`Found PropSettingInput. Entering -50...`);
-                                        await propInput.click({ clickCount: 3 });
-                                        await propInput.fill('-50');
-                                        await page.keyboard.press('Enter');
-                                        log(`Entered -50 into PropSettingInput.`);
-                                    } else {
-                                        log(`PropSettingInput not found. Skipping.`);
-                                    }
+                                } else {
+                                    log(`No sound results found for "${currentKeyword}". Falling back to Favorites...`);
                                 }
                             }
-
-                            // Fallback: If sequence failed, try to find ANY visible plus-bold icon that is NOT in the sidebar
-                            if (!soundAdded) {
-                                log(`Item-specific search failed. Trying filtered plus icons...`);
-                                const allIcons = await page.$$('[data-icon="plus-bold"]');
-                                for (const icon of allIcons) {
-                                    const inSidebar = await icon.evaluate(el => el.closest('[class*="Sidebar"]') || el.closest('[class*="sidebar"]'));
-                                    if (!inSidebar && await icon.isVisible()) {
-                                        const parentButton = await icon.evaluateHandle(el => el.closest('button') || el);
-                                        await parentButton.scrollIntoViewIfNeeded();
-                                        await parentButton.click({ force: true });
-                                        log(`Favorite sound added via filtered icon.`);
-                                        soundAdded = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            log(`Error in plus button selection: ${e.message}`);
                         }
 
-                        await page.waitForTimeout(2000);
+                        // Chế độ 2 (hoặc Fallback): Chọn từ Tab Favorites (Yêu thích)
+                        if (!soundAdded) {
+                            log(`Favorites music mode: opening Favorites tab...`);
+                            const favTab = page.locator('button:has-text("Favorites"), [role="tab"]:has-text("Favorites")').first();
+                            if (await favTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+                                await favTab.click().catch(() => null);
+                                await page.waitForTimeout(2500);
+                            }
 
-                        const saveBtn = 'button:has-text("Save"), .save-btn, button.jsx-2503522271.save-btn';
-                        const sBtn = await page.waitForSelector(saveBtn, { timeout: 10000, state: 'visible' }).catch(() => null);
-                        if (sBtn) {
-                            await sBtn.click();
-                            log(`Changes saved in editor.`);
-                            await page.waitForSelector('button:has-text("Post")', { timeout: 30000, state: 'visible' });
+                            // Find all round plus buttons in the favorites panel
+                            const favPlusBtns = page.locator('.Button__root--shape-rounded, button[class*="Button__root--shape-rounded"]');
+                            const totalFavs = await favPlusBtns.count();
+                            log(`Found ${totalFavs} favorite sound(s).`);
+
+                            if (totalFavs > 0) {
+                                // Rotate every 10 uploads
+                                const targetIdx = Math.floor(uploadedCount / 10) % totalFavs;
+                                log(`Music rotation: video #${uploadedCount + 1} -> picking favorite #${targetIdx + 1}/${totalFavs}`);
+                                await favPlusBtns.nth(targetIdx).click({ force: true });
+                                soundAdded = true;
+                            } else {
+                                log(`No favorites found. Trying first sound from For You / default list...`);
+                                const anyPlusBtn = page.locator('.Button__root--shape-rounded').first();
+                                if (await anyPlusBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+                                    await anyPlusBtn.click({ force: true });
+                                    soundAdded = true;
+                                }
+                            }
+                        }
+
+                        if (soundAdded) {
+                            log(`Sound added to timeline. Waiting for Audio property panel...`);
+                            await page.waitForTimeout(2000);
+
+                            // Set Volume to -50 dB in Audio properties panel
+                            try {
+                                const propInput = page.locator('input.PropSettingInput__input, input[class*="PropSettingInput"]').first();
+                                if (await propInput.isVisible({ timeout: 6000 }).catch(() => false)) {
+                                    log(`Setting sound volume to -50 dB...`);
+                                    await propInput.click({ clickCount: 3 });
+                                    const selectAllKey = process.platform === 'darwin' ? 'Meta+A' : 'Control+A';
+                                    await page.keyboard.press(selectAllKey);
+                                    await propInput.fill('-50');
+                                    await page.keyboard.press('Enter');
+                                    await page.waitForTimeout(500);
+                                    log(`Sound volume set to -50 dB.`);
+                                } else {
+                                    log(`Audio PropSettingInput not visible. Keeping default volume.`);
+                                }
+                            } catch (volErr) {
+                                log(`Volume adjustment skipped: ${volErr.message}`);
+                            }
+
+                            await takeScreenshot('step3_sound_added');
+
+                            // Click Save button in top-right corner to exit editor and return to upload form
+                            log(`Saving changes in editor...`);
+                            const saveBtn = page.locator('button:has-text("Save")').first();
+                            if (await saveBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+                                await saveBtn.click();
+                                log(`Clicked Save button. Waiting to return to upload form...`);
+                                await page.waitForSelector('button[data-e2e="post_video_button"], button:has-text("Post")', { timeout: 30000 });
+                                await page.waitForTimeout(2000);
+                                log(`Successfully saved editor and returned to upload form.`);
+                                await takeScreenshot('step4_saved_to_form');
+                            } else {
+                                log(`WARNING: Save button not visible in editor.`);
+                            }
+                        } else {
+                            log(`WARNING: Could not add sound. Exiting editor...`);
+                            const cancelBtn = page.locator('button:has-text("Cancel"), button:has-text("Exit")').first();
+                            await cancelBtn.click().catch(() => null);
                             await page.waitForTimeout(2000);
                         }
                     } else {
-                        log(`Editor/Sounds button not found after processing wait. Skipping editor steps.`);
+                        log(`Sounds button (.editor-entrance[data-button-name="sounds"]) not visible. Skipping editor steps.`);
                     }
                 } catch (e) {
-                    log(`Add sound task failed: ${e.message}`);
+                    log(`Add sound task encountered error: ${e.message}`);
                     await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_sound_fail.png`) }).catch(() => null);
                 }
             } else {
@@ -1136,6 +1096,9 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 const postSelectors = [
                     'button.common-button-post-video',
                     '[data-e2e="post_video_button"]',
+                    'button[data-e2e*="post"]',
+                    'button[data-e2e*="schedule"]',
+                    'button:has-text("Schedule")',
                     'button:has-text("Post"):not(:has-text("draft"))',
                 ];
 
@@ -1148,8 +1111,13 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                     }
                 }
 
+                if (clickAttempt === 0) {
+                    await takeScreenshot('step5_ready_to_post');
+                }
+
                 if (targetBtn) {
-                    log(`Clicking Post button (Attempt ${clickAttempt + 1})...`);
+                    const btnLabel = await targetBtn.innerText().catch(() => 'Post');
+                    log(`Clicking ${btnLabel.trim()} button (Attempt ${clickAttempt + 1})...`);
                     try {
                         // Strategy A: Real browser click
                         await targetBtn.click({ force: true, timeout: 5000 });
@@ -1164,20 +1132,21 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 for (let poll = 0; poll < 3; poll++) {
                     await page.waitForTimeout(5000);
 
-                    const postBtnGone = !await page.$('button:has-text("Post")');
-                    const successMsg = await page.$('text="Uploaded", text="Success", text="View video", text="Manage your posts", text="Share video"');
+                    const postBtnGone = !await page.$('button:has-text("Post"), button:has-text("Schedule")');
+                    const successMsg = await page.$('text="Uploaded", text="Success", text="View video", text="Manage your posts", text="Share video", text="Scheduled", text="Your video has been uploaded"');
                     const redirected = !page.url().includes('upload') || page.url().includes('manage') || page.url().includes('content');
 
                     if (postBtnGone || successMsg || redirected) {
                         log(`Post confirmed! (btnGone: ${postBtnGone}, msg: ${!!successMsg}, redirected: ${redirected})`);
                         clickedPost = true;
+                        await takeScreenshot('step6_post_success');
                         break;
                     }
 
-                    // Check if button text changed to "Posting..."
+                    // Check if button text changed to "Posting..." or "Scheduling..."
                     const btnText = await targetBtn?.innerText().catch(() => "");
-                    if (btnText?.includes("Posting")) {
-                        log("Status: Posting in progress...");
+                    if (btnText?.includes("Posting") || btnText?.includes("Scheduling")) {
+                        log(`Status: ${btnText.trim()} in progress...`);
                     }
 
                     await dismissPopups(page);
@@ -1224,12 +1193,12 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 }
 
                 try {
-                    let message = `ðŸŽ¬ <b>Upload TikTok thÃ nh cÃ´ng!</b>\n` +
-                                  `ðŸ‘¤ <b>Profile:</b> <code>${profile.name}</code>\n` +
-                                  `ðŸ“¹ <b>Video:</b> <code>${videoFileName}</code>\n` +
-                                  `ðŸ• <b>Thá»i gian:</b> <code>${new Date().toLocaleString('vi-VN')}</code>`;
+                    let message = `🎬 <b>Upload TikTok thành công!</b>\n` +
+                                  `👤 <b>Profile:</b> <code>${profile.name}</code>\n` +
+                                  `📹 <b>Video:</b> <code>${videoFileName}</code>\n` +
+                                  `🕒 <b>Thời gian:</b> <code>${new Date().toLocaleString('vi-VN')}</code>`;
                     if (videoLink) {
-                        message += `\nðŸ”— <b>Link video:</b> <a href="${videoLink}">${videoLink}</a>`;
+                        message += `\n🔗 <b>Link video:</b> <a href="${videoLink}">${videoLink}</a>`;
                     }
                     await sendTelegramNotification(message);
                 } catch (telegramErr) {
@@ -1369,10 +1338,22 @@ export async function addFavoriteMusic(profile, searchTerm) {
         await dismissPopups(page);
         await dismissOnboardingModals(page, log);
 
-        const editBtn = page.locator('button:has-text("Edit video")').first();
-        if (await editBtn.isVisible({ timeout: 10000 })) {
+        await page.evaluate(() => {
+            const btn = document.querySelector('.editor-entrance[data-button-name="sounds"], [data-button-name="sounds"], button:has-text("Sounds")');
+            if (btn) btn.scrollIntoView({ block: 'center' });
+        }).catch(() => null);
+
+        const editBtn = page.locator('.editor-entrance[data-button-name="sounds"], button[data-button-name="sounds"], button:has-text("Sounds"), button:has-text("Edit video")').first();
+        if (await editBtn.isVisible({ timeout: 15000 })) {
             await editBtn.click();
             await page.waitForTimeout(2000);
+
+            // Dismiss Phone mode if present
+            const phoneModeGotIt = page.locator('div:has-text("Phone mode") button:has-text("Got it"), button:has-text("Got it")').first();
+            if (await phoneModeGotIt.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await phoneModeGotIt.click().catch(() => null);
+                await page.waitForTimeout(1000);
+            }
 
             const searchInput = page.locator('input[placeholder*="sound" i], input[placeholder*="music" i]').first();
             if (await searchInput.isVisible({ timeout: 5000 })) {

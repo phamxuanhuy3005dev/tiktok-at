@@ -11,7 +11,9 @@ router.get('/config', (req, res) => {
             maxConcurrency: 2,
             runMode: 'parallel',
             limitUploads: false,
-            uploadLimitCount: 1
+            uploadLimitCount: 1,
+            telegramToken: '',
+            telegramChatId: ''
         };
 
         rows.forEach(r => {

@@ -36,4 +36,14 @@ router.post('/system/clear-debug', (req, res) => {
     }
 });
 
+router.post('/system/test-telegram', async (req, res) => {
+    try {
+        const { sendTelegramNotification } = await import('../services/system-service.js');
+        await sendTelegramNotification('🔔 <b>TikTok Automation:</b> Tin nhắn kiểm tra kết nối Telegram thành công!');
+        res.json({ success: true, message: 'Đã gửi tin nhắn thử nghiệm tới Telegram.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;
