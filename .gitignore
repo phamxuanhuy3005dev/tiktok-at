@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# User & browser profile data
+profiles/
+*/profiles/
+
+# Local database & data files
+data/
+*.db
+*.db-shm
+*.db-wal
+*.db.json
+
+# Media & local uploads
+uploads/
+*/uploads/
+dummy_videos/
+trash/
+
+# Debug files & screenshots
+*.log
+backend/automation.log
+debug_*
+backend/debug_*
+*.png
+*.jpg
+*.jpeg
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

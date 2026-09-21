@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181824"/>
+      <stop offset="100%" stop-color="#08080c"/>
+    </linearGradient>
+    <linearGradient id="ttPink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF3FB6"/>
+      <stop offset="100%" stop-color="#FF2150"/>
+    </linearGradient>
+    <linearGradient id="ttCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#00F2FE"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#FF3FB6" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <path d="M38 16c1.5 4 4.5 7 8.5 7.5v6c-3.5 0-6.5-1.5-8.5-3.5v15c0 7.2-5.8 13-13 13s-13-5.8-13-13 5.8-13 13-13c1.2 0 2.3.2 3.3.5v6.2c-1-.4-2.1-.7-3.3-.7-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7V16h6z" 
+        fill="url(#ttCyan)" opacity="0.8" transform="translate(-1.5, -1)"/>
+  <path d="M38 16c1.5 4 4.5 7 8.5 7.5v6c-3.5 0-6.5-1.5-8.5-3.5v15c0 7.2-5.8 13-13 13s-13-5.8-13-13 5.8-13 13-13c1.2 0 2.3.2 3.3.5v6.2c-1-.4-2.1-.7-3.3-.7-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7V16h6z" 
+        fill="url(#ttPink)" filter="url(#glow)" transform="translate(1, 0.5)"/>
+  <path d="M38 16c1.5 4 4.5 7 8.5 7.5v6c-3.5 0-6.5-1.5-8.5-3.5v15c0 7.2-5.8 13-13 13s-13-5.8-13-13 5.8-13 13-13c1.2 0 2.3.2 3.3.5v6.2c-1-.4-2.1-.7-3.3-.7-3.9 0-7 3.1-7 7s3.1 7 7 7 7-3.1 7-7V16h6z" 
+        fill="#FFFFFF" opacity="0.95"/>
+</svg>

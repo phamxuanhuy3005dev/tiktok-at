@@ -1,0 +1,208 @@
+import { useState, useCallback } from 'react';
+import axios from 'axios';
+
+export const useAutomationActions = ({
+  profiles = [],
+  selectedForRun = new Set(),
+  setIsLoading,
+  setMessage
+} = {}) => {
+  const [loggingInProfiles, setLoggingInProfiles] = useState(() => new Set());
+  const [addingFavoriteMusicProfiles, setAddingFavoriteMusicProfiles] = useState(() => new Set());
+  const [musicSearchTerms, setMusicSearchTerms] = useState({});
+
+  const syncProfilesStatus = useCallback((newProfiles = []) => {
+    setLoggingInProfiles((prev) => {
+      const next = new Set(prev);
+      newProfiles.forEach((p) => {
+        if (p.status === 'logging_in') next.add(p.id);
+        else next.delete(p.id);
+      });
+      return next;
+    });
+
+    setAddingFavoriteMusicProfiles((prev) => {
+      const next = new Set(prev);
+      newProfiles.forEach((p) => {
+        if (p.status === 'adding_favorite_music') next.add(p.id);
+        else next.delete(p.id);
+      });
+      return next;
+    });
+  }, []);
+
+  const startAutomation = useCallback(async (profileId = null) => {
+    if (typeof setIsLoading === 'function') setIsLoading(true);
+    try {
+      if (profileId) {
+        await axios.post('/api/start', { profileId });
+        if (typeof setMessage === 'function') {
+          setMessage({
+            type: 'success',
+            text: 'Automation started for profile'
+          });
+        }
+      } else {
+        const profileIds = [...selectedForRun];
+        if (profileIds.length === 0) {
+          if (typeof setMessage === 'function') {
+            setMessage({ type: 'error', text: 'Chọn ít nhất một profile (checkbox) để chạy hàng loạt.' });
+          }
+          if (typeof setIsLoading === 'function') setIsLoading(false);
+          return;
+        }
+        await axios.post('/api/start', { profileIds });
+        if (typeof setMessage === 'function') {
+          setMessage({
+            type: 'success',
+            text: `Đã bật chạy tự động cho ${profileIds.length} profile đã chọn`
+          });
+        }
+      }
+    } catch (err) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to start' });
+      }
+    } finally {
+      if (typeof setIsLoading === 'function') setIsLoading(false);
+    }
+  }, [selectedForRun, setIsLoading, setMessage]);
+
+  const openProfile = useCallback(async (profileId) => {
+    try {
+      await axios.post('/api/open-profile', { profileId });
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'success', text: 'Browser opened for profile' });
+      }
+    } catch (err) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to open browser' });
+      }
+    }
+  }, [setMessage]);
+
+  const startLoginTikTok = useCallback(async (profileId) => {
+    try {
+      await axios.post('/api/login-tiktok', { profileId });
+      setLoggingInProfiles((prev) => new Set([...prev, profileId]));
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'success', text: 'Login TikTok started! Browser will open shortly.' });
+      }
+    } catch (err) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to start login' });
+      }
+    }
+  }, [setMessage]);
+
+  const stopLoginTikTok = useCallback(async (profileId) => {
+    try {
+      await axios.post('/api/login-tiktok/stop', { profileId });
+      setLoggingInProfiles((prev) => {
+        const next = new Set(prev);
+        next.delete(profileId);
+        return next;
+      });
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'success', text: 'Login session stopping...' });
+      }
+    } catch (err) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to stop login' });
+      }
+    }
+  }, [setMessage]);
+
+  const startBulkLogin = useCallback(async () => {
+    const profileIds = [...selectedForRun];
+    if (profileIds.length === 0) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: 'Chọn ít nhất một profile để Login.' });
+      }
+      return;
+    }
+    const missing = profileIds.filter((id) => {
+      const p = profiles.find((pr) => pr.id === id);
+      return !p || (!p.cookies && (!p.email || !p.pass));
+    });
+    if (missing.length > 0) {
+      if (typeof setMessage === 'function') {
+        setMessage({
+          type: 'error',
+          text: `${missing.length} profile thiếu cookies hoặc email/password (cần Import CSV trước).`
+        });
+      }
+      return;
+    }
+    if (typeof setMessage === 'function') {
+      setMessage({ type: 'success', text: `Bắt đầu Login cho ${profileIds.length} profile...` });
+    }
+    for (const pid of profileIds) {
+      if (loggingInProfiles.has(pid)) continue;
+      try {
+        await axios.post('/api/login-tiktok', { profileId: pid });
+        setLoggingInProfiles((prev) => new Set([...prev, pid]));
+      } catch (err) {
+        if (typeof setMessage === 'function') {
+          setMessage({
+            type: 'error',
+            text: `Lỗi login profile ${pid}: ${err.response?.data?.error || err.message}`
+          });
+        }
+      }
+    }
+  }, [selectedForRun, profiles, loggingInProfiles, setMessage]);
+
+  const handleAddFavoriteMusic = useCallback(async (profileId, searchTerm) => {
+    if (!searchTerm || !searchTerm.trim()) {
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: 'Please enter a search term' });
+      }
+      return;
+    }
+    try {
+      setAddingFavoriteMusicProfiles((prev) => new Set([...prev, profileId]));
+      await axios.post('/api/add-favorite-music', { profileId, searchTerm: searchTerm.trim() });
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'success', text: 'Adding favorite music! Browser will open shortly.' });
+      }
+    } catch (err) {
+      setAddingFavoriteMusicProfiles((prev) => {
+        const next = new Set(prev);
+        next.delete(profileId);
+        return next;
+      });
+      if (typeof setMessage === 'function') {
+        setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to add favorite music' });
+      }
+    }
+  }, [setMessage]);
+
+  const handleUpdateMusicSearchTerm = useCallback(async (profileId, value) => {
+    setMusicSearchTerms((prev) => ({ ...prev, [profileId]: value }));
+    try {
+      await axios.patch(`/api/profiles/${profileId}`, { music_search: value });
+    } catch (err) {
+      console.error('Failed to save music_search:', err);
+    }
+  }, []);
+
+  return {
+    loggingInProfiles,
+    setLoggingInProfiles,
+    addingFavoriteMusicProfiles,
+    setAddingFavoriteMusicProfiles,
+    musicSearchTerms,
+    setMusicSearchTerms,
+    syncProfilesStatus,
+    startAutomation,
+    openProfile,
+    startLoginTikTok,
+    stopLoginTikTok,
+    startBulkLogin,
+    handleAddFavoriteMusic,
+    handleUpdateMusicSearchTerm
+  };
+};
+
+export default useAutomationActions;
