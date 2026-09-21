@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, X, Edit3, Globe } from 'lucide-react';
 
 // Identity cell of a profile row: selection checkbox, avatar, editable name.
-const ProfileCardHeader = ({
+const ProfileCardHeader = React.memo(({
   profile,
   isSelected,
   onToggleSelected,
@@ -80,6 +80,6 @@ const ProfileCardHeader = ({
       )}
     </div>
   </>
-);
+));
 
 export default ProfileCardHeader;

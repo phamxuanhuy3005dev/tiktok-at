@@ -2,6 +2,28 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { showToast } from '../utils/toast';
 
+const isProfileEqual = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.name === b.name &&
+    a.status === b.status &&
+    a.video_folder === b.video_folder &&
+    a.channel_ids === b.channel_ids &&
+    a.group_id === b.group_id &&
+    a.set_music === b.set_music &&
+    a.remove_title === b.remove_title &&
+    a.need_content_check === b.need_content_check &&
+    a.auto_increment_schedule === b.auto_increment_schedule &&
+    a.schedule_interval === b.schedule_interval &&
+    a.upload_count === b.upload_count &&
+    a.last_run === b.last_run &&
+    a.is_browser_open === b.is_browser_open &&
+    a.cookies === b.cookies
+  );
+};
+
 export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedForRun } = {}) => {
   const [profiles, setProfiles] = useState([]);
   const [config, setConfig] = useState({ videoFolder: '', maxConcurrency: 2 });
@@ -19,6 +41,21 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
   const [editingGroupValue, setEditingGroupValue] = useState('');
 
   const processingRef = useRef(new Set());
+  const hookRef = useRef({ onProfilesFetched });
+  hookRef.current.onProfilesFetched = onProfilesFetched;
+
+  const activeRef = useRef({ hasActiveJob: false });
+  useEffect(() => {
+    activeRef.current.hasActiveJob =
+      profiles.some(
+        (p) =>
+          p.status === 'uploading' ||
+          p.status === 'logging_in' ||
+          p.status === 'changing_avatar' ||
+          p.status === 'adding_favorite_music'
+      ) || Boolean(batchStatus);
+  }, [profiles, batchStatus]);
+
   const message = null;
 
   const setMessage = useCallback((msg) => {
@@ -35,6 +72,60 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     return profiles.filter((p) => p.group_id === groupFilter);
   }, [profiles, groupFilter]);
 
+  // Lightweight profile-only polling fetch (avoids re-fetching static config & groups)
+  const fetchProfilesOnly = useCallback(async () => {
+    try {
+      const promises = [axios.get('/api/profiles')];
+      if (activeRef.current.hasActiveJob) {
+        promises.push(axios.get('/api/batch-status').catch(() => ({ data: null })));
+      }
+
+      const [pRes, bRes] = await Promise.all(promises);
+      const newProfiles = pRes.data || [];
+
+      setProfiles((prev) => {
+        let hasAnyChange = false;
+        if (prev.length !== newProfiles.length) {
+          hasAnyChange = true;
+        }
+
+        const merged = newProfiles.map((np, idx) => {
+          if (processingRef.current.has(np.id)) {
+            const current = prev.find((p) => p.id === np.id);
+            return current || np;
+          }
+          const existing = prev[idx]?.id === np.id ? prev[idx] : prev.find((p) => p.id === np.id);
+          if (existing && isProfileEqual(existing, np)) {
+            return existing;
+          }
+          hasAnyChange = true;
+          return np;
+        });
+
+        if (!hasAnyChange && prev.length === merged.length) {
+          return prev;
+        }
+        return merged;
+      });
+
+      if (bRes && bRes.data) {
+        const newStatus = bRes.data.status !== 'idle' ? bRes.data : null;
+        setBatchStatus((prev) => {
+          if (prev === null && newStatus === null) return null;
+          if (prev && newStatus && JSON.stringify(prev) === JSON.stringify(newStatus)) return prev;
+          return newStatus;
+        });
+      }
+
+      if (typeof hookRef.current.onProfilesFetched === 'function') {
+        hookRef.current.onProfilesFetched(newProfiles);
+      }
+    } catch (err) {
+      console.error('fetchProfilesOnly error:', err);
+    }
+  }, []);
+
+  // Comprehensive fetch for initial load or after mutations
   const fetchData = useCallback(async () => {
     try {
       const [pRes, cRes, gRes, bRes] = await Promise.all([
@@ -46,34 +137,109 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
 
       const newProfiles = pRes.data || [];
       setProfiles((prev) => {
-        return newProfiles.map((np) => {
+        let hasAnyChange = false;
+        if (prev.length !== newProfiles.length) {
+          hasAnyChange = true;
+        }
+
+        const merged = newProfiles.map((np, idx) => {
           if (processingRef.current.has(np.id)) {
             const current = prev.find((p) => p.id === np.id);
             return current || np;
           }
+          const existing = prev[idx]?.id === np.id ? prev[idx] : prev.find((p) => p.id === np.id);
+          if (existing && isProfileEqual(existing, np)) {
+            return existing;
+          }
+          hasAnyChange = true;
           return np;
         });
+
+        if (!hasAnyChange && prev.length === merged.length) {
+          return prev;
+        }
+        return merged;
       });
 
-      setConfig(cRes.data || { videoFolder: '', maxConcurrency: 2 });
-      setGroups(gRes.data || []);
-      if (bRes && bRes.data) {
-        setBatchStatus(bRes.data.status !== 'idle' ? bRes.data : null);
-      }
+      setConfig((prev) => {
+        const next = cRes.data || { videoFolder: '', maxConcurrency: 2 };
+        if (prev.videoFolder === next.videoFolder && prev.maxConcurrency === next.maxConcurrency) {
+          return prev;
+        }
+        return next;
+      });
 
-      if (typeof onProfilesFetched === 'function') {
-        onProfilesFetched(newProfiles);
+      setGroups((prev) => {
+        const next = gRes.data || [];
+        if (
+          prev.length === next.length &&
+          prev.every((g, i) => g.id === next[i]?.id && g.name === next[i]?.name)
+        ) {
+          return prev;
+        }
+        return next;
+      });
+
+      const newStatus = bRes && bRes.data && bRes.data.status !== 'idle' ? bRes.data : null;
+      setBatchStatus((prev) => {
+        if (prev === null && newStatus === null) return null;
+        if (prev && newStatus && JSON.stringify(prev) === JSON.stringify(newStatus)) return prev;
+        return newStatus;
+      });
+
+      if (typeof hookRef.current.onProfilesFetched === 'function') {
+        hookRef.current.onProfilesFetched(newProfiles);
       }
     } catch (err) {
       console.error('Fetch error:', err);
     }
-  }, [onProfilesFetched]);
+  }, []);
 
+  // Adaptive background polling with visibility listener
   useEffect(() => {
+    let timerId = null;
+    let isCancelled = false;
+
+    // Initial full fetch
     fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+
+    const runPoll = async () => {
+      if (isCancelled) return;
+
+      if (!document.hidden) {
+        await fetchProfilesOnly();
+      }
+
+      if (isCancelled) return;
+
+      const delay = document.hidden
+        ? 20000
+        : (activeRef.current.hasActiveJob ? 2500 : 5000);
+
+      timerId = setTimeout(runPoll, delay);
+    };
+
+    timerId = setTimeout(runPoll, 5000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        clearTimeout(timerId);
+        fetchProfilesOnly().then(() => {
+          if (!isCancelled) {
+            timerId = setTimeout(runPoll, activeRef.current.hasActiveJob ? 2500 : 5000);
+          }
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timerId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchData, fetchProfilesOnly]);
 
   const dismissBatchStatus = useCallback(async () => {
     setBatchStatus(null);
@@ -84,7 +250,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     }
   }, []);
 
-  const addGroup = async () => {
+  const addGroup = useCallback(async () => {
     const name = newGroupName.trim();
     if (!name) return;
     try {
@@ -96,9 +262,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       const errText = err.response?.data?.error || 'Không thể tạo nhóm';
       setMessage({ type: 'error', text: errText });
     }
-  };
+  }, [newGroupName, fetchData, setMessage]);
 
-  const updateGroupName = async (id, newName) => {
+  const updateGroupName = useCallback(async (id, newName) => {
     if (!newName.trim()) {
       setEditingGroupId(null);
       return;
@@ -113,22 +279,22 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       setMessage({ type: 'error', text: errText });
       setEditingGroupId(null);
     }
-  };
+  }, [fetchData, setMessage]);
 
-  const deleteGroup = async (id) => {
+  const deleteGroup = useCallback(async (id) => {
     if (!window.confirm('Bạn có chắc muốn xóa nhóm này? Nhóm phải không còn profile nào gán bên trong.')) return;
     try {
       await axios.delete(`/api/groups/${id}`);
-      if (groupFilter === id) setGroupFilter('all');
+      setGroupFilter((prev) => (prev === id ? 'all' : prev));
       await fetchData();
       setMessage({ type: 'success', text: 'Đã xóa nhóm thành công' });
     } catch (err) {
       const errText = err.response?.data?.error || 'Không thể xóa nhóm';
       setMessage({ type: 'error', text: errText });
     }
-  };
+  }, [fetchData, setMessage]);
 
-  const updateProfileGroup = async (profileId, groupId) => {
+  const updateProfileGroup = useCallback(async (profileId, groupId) => {
     try {
       await axios.patch(`/api/profiles/${profileId}`, { group_id: groupId });
       await fetchData();
@@ -137,9 +303,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       const errText = err.response?.data?.error || 'Không thể cập nhật nhóm cho profile';
       setMessage({ type: 'error', text: errText });
     }
-  };
+  }, [fetchData, setMessage]);
 
-  const deleteProfile = async (id) => {
+  const deleteProfile = useCallback(async (id) => {
     if (!window.confirm('Bạn có chắc muốn xóa profile này? Dữ liệu profile sẽ được đưa vào thùng rác.')) return;
     try {
       await axios.delete(`/api/profiles/${id}`);
@@ -147,9 +313,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [fetchData]);
 
-  const deleteSelectedProfiles = async (targetSet, clearSelectionFn) => {
+  const deleteSelectedProfiles = useCallback(async (targetSet, clearSelectionFn) => {
     const target = targetSet || selectedForRun;
     if (!target || target.size === 0) {
       setMessage({ type: 'error', text: 'Vui lòng chọn ít nhất một profile để xóa.' });
@@ -168,9 +334,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       console.error(err);
       setMessage({ type: 'error', text: 'Có lỗi khi xóa profile.' });
     }
-  };
+  }, [selectedForRun, setSelectedForRun, fetchData, setMessage]);
 
-  const updateConfig = async () => {
+  const updateConfig = useCallback(async () => {
     setIsSavingConfig(true);
     try {
       await axios.post('/api/config', config);
@@ -181,27 +347,27 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       setIsSavingConfig(false);
     }
-  };
+  }, [config, setMessage]);
 
-  const updateProfileFolder = async (id, folder) => {
+  const updateProfileFolder = useCallback(async (id, folder) => {
     try {
       await axios.patch(`/api/profiles/${id}`, { video_folder: folder });
       fetchData();
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileChannelIds = async (id, channelIds) => {
+  const updateProfileChannelIds = useCallback(async (id, channelIds) => {
     try {
       await axios.patch(`/api/profiles/${id}`, { channel_ids: channelIds });
       fetchData();
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileName = async (id, newName) => {
+  const updateProfileName = useCallback(async (id, newName) => {
     if (!newName.trim()) {
       setEditingId(null);
       return;
@@ -215,10 +381,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể đổi tên profile' });
       setEditingId(null);
     }
-  };
+  }, [fetchData, setMessage]);
 
-
-  const updateProfileSetMusic = async (id, enabled) => {
+  const updateProfileSetMusic = useCallback(async (id, enabled) => {
     if (processingRef.current.has(id)) return;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, set_music: enabled ? 1 : 0 } : p)));
     processingRef.current.add(id);
@@ -232,9 +397,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       processingRef.current.delete(id);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileRemoveTitle = async (id, enabled) => {
+  const updateProfileRemoveTitle = useCallback(async (id, enabled) => {
     if (processingRef.current.has(id)) return;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, remove_title: enabled ? 1 : 0 } : p)));
     processingRef.current.add(id);
@@ -248,9 +413,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       processingRef.current.delete(id);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileNeedContentCheck = async (id, enabled) => {
+  const updateProfileNeedContentCheck = useCallback(async (id, enabled) => {
     if (processingRef.current.has(id)) return;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, need_content_check: enabled ? 1 : 0 } : p)));
     processingRef.current.add(id);
@@ -264,9 +429,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       processingRef.current.delete(id);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileAutoIncrementSchedule = async (id, enabled) => {
+  const updateProfileAutoIncrementSchedule = useCallback(async (id, enabled) => {
     if (processingRef.current.has(id)) return;
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, auto_increment_schedule: enabled ? 1 : 0 } : p)));
     processingRef.current.add(id);
@@ -280,9 +445,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       processingRef.current.delete(id);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileScheduleInterval = async (id, interval) => {
+  const updateProfileScheduleInterval = useCallback(async (id, interval) => {
     if (processingRef.current.has(id)) return;
     const intervalNum = Number(interval);
     const intervalVal = [5, 10, 15, 20].includes(intervalNum) ? intervalNum : 5;
@@ -298,9 +463,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } finally {
       processingRef.current.delete(id);
     }
-  };
+  }, [fetchData]);
 
-  const updateProfileUploadCount = async (id, count) => {
+  const updateProfileUploadCount = useCallback(async (id, count) => {
     setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, upload_count: count } : p)));
     try {
       await axios.patch(`/api/profiles/${id}`, { upload_count: count });
@@ -310,9 +475,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       console.error(err);
       await fetchData();
     }
-  };
+  }, [fetchData]);
 
-  const clearTrash = async (targetSet) => {
+  const clearTrash = useCallback(async (targetSet) => {
     const target = targetSet || selectedForRun;
     if (!target || target.size === 0) {
       setMessage({ type: 'error', text: 'Vui lòng chọn ít nhất một profile để dọn dẹp rác.' });
@@ -331,9 +496,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Lỗi khi dọn rác' });
     }
-  };
+  }, [selectedForRun, setMessage]);
 
-  const clearDebugFiles = async () => {
+  const clearDebugFiles = useCallback(async () => {
     if (!window.confirm('Xóa toàn bộ file debug PNG và dọn automation.log?\nHành động này không ảnh hưởng đến profile hay cookie.')) return;
     setMessage({ type: 'info', text: 'Đang xóa file debug...' });
     try {
@@ -343,9 +508,9 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Lỗi khi xóa debug' });
     }
-  };
+  }, [setMessage]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     switch (status) {
       case 'uploading': return 'var(--accent)';
       case 'logging_in': return '#10B981';
@@ -356,7 +521,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       case 'no_videos': return '#EAB308';
       default: return 'var(--text-muted)';
     }
-  };
+  }, []);
 
   return {
     profiles,
@@ -389,6 +554,7 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     editingGroupValue,
     setEditingGroupValue,
     fetchData,
+    fetchProfilesOnly,
     addGroup,
     updateGroupName,
     deleteGroup,
@@ -407,7 +573,13 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     updateProfileUploadCount,
     clearTrash,
     clearDebugFiles,
-    getStatusColor
+    getStatusColor,
+    get onProfilesFetched() {
+      return hookRef.current.onProfilesFetched;
+    },
+    set onProfilesFetched(fn) {
+      hookRef.current.onProfilesFetched = fn;
+    }
   };
 };
 

@@ -75,6 +75,8 @@ export async function releaseProfileLocks(userDataDir, profileName) {
         }
     }
 
+    let hadLocks = pids.length > 0;
+
     // 2. Unlink lock and socket files if still present on disk
     for (const file of ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile']) {
         const p = path.join(userDataDir, file);
@@ -82,12 +84,15 @@ export async function releaseProfileLocks(userDataDir, profileName) {
             const s = fs.lstatSync(p);
             if (s.isSymbolicLink() || s.isFile() || s.isSocket()) {
                 fs.unlinkSync(p);
+                hadLocks = true;
             }
         } catch (e) {}
     }
 
-    // Brief settling delay for filesystem locks
-    await new Promise(r => setTimeout(r, 150));
+    // Only wait settling delay if locks or processes were actively cleaned up
+    if (hadLocks) {
+        await new Promise(r => setTimeout(r, 150));
+    }
 }
 
 /**

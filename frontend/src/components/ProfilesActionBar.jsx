@@ -5,7 +5,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-const ProfilesActionBar = ({
+const ProfilesActionBar = React.memo(({
   groups = [],
   groupFilter = 'all',
   setGroupFilter,
@@ -84,6 +84,6 @@ const ProfilesActionBar = ({
       </div>
     </>
   );
-};
+});
 
 export default ProfilesActionBar;

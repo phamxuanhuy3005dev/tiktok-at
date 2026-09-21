@@ -17,10 +17,12 @@ function normalizeGroupId(value) {
     return trimmed.length === 0 ? null : trimmed;
 }
 
+const listProfilesStmt = db.prepare('SELECT * FROM profiles ORDER BY created_at DESC');
+
 // GET /api/profiles — List all profiles
 router.get('/profiles', (req, res) => {
     try {
-        const profiles = db.prepare('SELECT * FROM profiles ORDER BY created_at DESC').all();
+        const profiles = listProfilesStmt.all();
         const enriched = profiles.map(p => ({
             ...p,
             is_browser_open: manualBrowsers.has(p.id)

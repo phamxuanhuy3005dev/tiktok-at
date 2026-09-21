@@ -1,6 +1,8 @@
 
+import React from 'react';
+
 // Compact square action. Tooltip lives on a wrapper so it still shows when disabled.
-const IconActionButton = ({ icon, onClick, disabled, title, color, bg, border, size = '36px' }) => (
+const IconActionButton = React.memo(({ icon, onClick, disabled, title, color, bg, border, size = '36px' }) => (
   <span className="icon-btn-wrap" data-tooltip={title}>
     <button
       type="button"
@@ -29,6 +31,6 @@ const IconActionButton = ({ icon, onClick, disabled, title, color, bg, border, s
       {icon}
     </button>
   </span>
-);
+));
 
 export default IconActionButton;

@@ -29,6 +29,9 @@ if (!fs.existsSync(DUMMY_VIDEOS_DIR)) fs.mkdirSync(DUMMY_VIDEOS_DIR, { recursive
 export const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 10000');
+db.pragma('synchronous = NORMAL');
+db.pragma('cache_size = -64000');
+db.pragma('temp_store = MEMORY');
 
 // Create tables
 db.exec(`
@@ -109,6 +112,7 @@ try {
     db.exec(`
         CREATE INDEX IF NOT EXISTS idx_profile_schedules_profile_id ON profile_schedules(profile_id);
         CREATE INDEX IF NOT EXISTS idx_profiles_group_id ON profiles(group_id);
+        CREATE INDEX IF NOT EXISTS idx_profiles_status ON profiles(status);
         CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
     `);
 } catch (err) {
