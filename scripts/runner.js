@@ -40,16 +40,28 @@ function writeCache(data) {
   } catch (_) {}
 }
 
-// Chạy lệnh shell đồng bộ
+// Chạy lệnh shell đồng bộ (tương thích tối đa Windows và Unix)
 function runCmd(command, args, cwd) {
   const isWin = process.platform === 'win32';
-  const bin = isWin && (command === 'npm' || command === 'npx') ? `${command}.cmd` : command;
-  const res = spawnSync(bin, args, {
+  const cmdToRun = isWin && (command === 'npm' || command === 'npx') ? `${command}.cmd` : command;
+  
+  let res = spawnSync(cmdToRun, args, {
     cwd,
     stdio: 'inherit',
     shell: isWin,
     env: process.env,
   });
+
+  // Fallback nếu không tìm thấy lệnh đuôi .cmd trên Windows
+  if (res.error && isWin) {
+    res = spawnSync(command, args, {
+      cwd,
+      stdio: 'inherit',
+      shell: true,
+      env: process.env,
+    });
+  }
+
   if (res.error) {
     throw res.error;
   }
@@ -105,42 +117,74 @@ function calculateFrontendSourceHash() {
   return hash.digest('hex');
 }
 
-// Kiểm tra cổng đang bị chiếm dụng
+// Kiểm tra cổng đang bị chiếm dụng (có timeout an toàn)
 function checkPortInUse(port) {
   return new Promise((resolve) => {
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
+    }, 1000);
+
     const tester = net.createServer()
       .once('error', (err) => {
-        if (err.code === 'EADDRINUSE') resolve(true);
-        else resolve(false);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          resolve(err.code === 'EADDRINUSE');
+        }
       })
       .once('listening', () => {
-        tester.once('close', () => resolve(false)).close();
-      })
-      .listen(port);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          tester.once('close', () => resolve(false)).close();
+        }
+      });
+
+    try {
+      tester.listen(port);
+    } catch (_) {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        resolve(false);
+      }
+    }
   });
 }
 
 // Giải phóng cổng nếu bị kẹt từ phiên trước
 async function freePortIfBusy(port) {
-  const inUse = await checkPortInUse(port);
-  if (!inUse) return;
-
-  console.log(`⚠️  [Cổng ${port}] Đang bị chiếm dụng bởi tiến trình khác. Đang tiến hành giải phóng...`);
   try {
+    const inUse = await checkPortInUse(port);
+    if (!inUse) return;
+
+    console.log(`⚠️  [Cổng ${port}] Đang bị chiếm dụng bởi tiến trình khác. Đang tiến hành giải phóng...`);
     if (process.platform === 'win32') {
-      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-      const lines = output.trim().split('\n');
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        const pid = parts[parts.length - 1];
-        if (pid && pid !== '0' && pid !== String(process.pid)) {
-          execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+      let output = '';
+      try {
+        output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      } catch (_) {
+        output = '';
+      }
+      if (output) {
+        const lines = output.trim().split('\n');
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0' && pid !== String(process.pid)) {
+            try {
+              execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+            } catch (_) {}
+          }
         }
       }
     } else {
       execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
     }
-    // Chờ 0.5s để hệ điều hành giải phóng socket
     await new Promise(r => setTimeout(r, 500));
     console.log(`✅ [Cổng ${port}] Đã giải phóng thành công!`);
   } catch (err) {
@@ -259,6 +303,11 @@ async function main() {
     } else {
       process.exit(code ?? 0);
     }
+  });
+
+  serverProcess.on('error', (err) => {
+    console.error('❌ [LỖI SERVER]:', err.message);
+    process.exit(1);
   });
 }
 

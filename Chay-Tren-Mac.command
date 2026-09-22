@@ -28,3 +28,12 @@ fi
 
 # 2. Khởi chạy thông qua bộ điều phối Runner
 node scripts/runner.js "$@"
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "======================================================="
+    echo "❌ [THÔNG BÁO] Ứng dụng đã dừng với mã lỗi: $EXIT_CODE"
+    echo "======================================================="
+    read -n 1 -s -r -p "Nhấn phím bất kỳ để đóng cửa sổ..."
+fi
