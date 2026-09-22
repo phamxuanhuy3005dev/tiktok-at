@@ -33,6 +33,8 @@ dist/
 build/
 */dist/
 */build/
+*.zip
+TikTok-Automation.zip
 
 # Environment files
 .env

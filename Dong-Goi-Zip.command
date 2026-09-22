@@ -13,8 +13,12 @@ echo "🔨 [1/3] Đang build Frontend mới nhất..."
 npm run build --prefix frontend
 
 # 2. Xóa file zip cũ nếu có trên Desktop
-OUTPUT_ZIP="$HOME/Desktop/TikTok-Automation.zip"
+OUTPUT_ZIP="$DIR/TikTok-Automation.zip"
 rm -f "$OUTPUT_ZIP"
+
+# 2.5 Đảm bảo file .bat giữ nguyên chuẩn xuống dòng Windows (CRLF) khi đóng gói từ Mac
+perl -pi -e 's/\r\n|\n|\r/\r\n/g' Chay-Tren-Windows.bat 2>/dev/null || true
+perl -pi -e 's/\r\n|\n|\r/\r\n/g' Dong-Goi-Zip.bat 2>/dev/null || true
 
 # 3. Tạo file ZIP sạch sẽ
 echo "📦 [2/3] Đang nén file sạch sẽ (loại trừ node_modules, profiles, cache)..."
@@ -27,7 +31,8 @@ zip -r "$OUTPUT_ZIP" . \
     -x "*data/tiktok.db*" \
     -x "*.DS_Store*" \
     -x "*backend/*.log*" \
-    -x "*backend/*.png*"
+    -x "*backend/*.png*" \
+    -x "*.zip*"
 
 echo ""
 echo "======================================================="
