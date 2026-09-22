@@ -64,70 +64,48 @@
 
 ---
 
-## 🚀 Cài Đặt Nhanh
+## 🚀 Khởi Chạy Nhanh (1-Click Run)
 
-### Bước 1: Clone Repository
+Bạn không cần phải chạy các lệnh cài đặt phức tạp. Hệ thống đã được thiết lập để **tự động hóa toàn bộ**:
+
+### Bước 1: Tải / Clone Mã Nguồn
 ```bash
 git clone https://github.com/phamxuanhuy3005dev/tiktok-at.git
 cd tiktok-at
 ```
 
-### Bước 2: Cài Đặt Dependencies & Trình Duyệt
+### Bước 2: Khởi Chạy Bằng 1-Click
+- 💻 **Trên Windows**: Nhấp đúp chuột vào file **`Chay-Tren-Windows.bat`**.
+- 🍎 **Trên macOS**: Nhấp đúp chuột vào file **`Chay-Tren-Mac.command`** trong Finder.
+- ⚡ **Hoặc dùng Terminal (Mọi hệ điều hành)**:
+  ```bash
+  npm start
+  ```
 
-```bash
-# 1. Cài đặt Backend
-cd backend
-npm install
-npx playwright install chromium
-
-# 2. Cài đặt Frontend
-cd ../frontend
-npm install
-```
-
-### Bước 3: Tạo Video Mẫu Kiểm Thử (Tùy chọn)
-Nếu bạn chưa có video để test, hãy chạy script tạo video mẫu dọc:
-```bash
-cd ../backend
-npm run generate-dummy
-```
-Script sẽ tự động tạo các video chuẩn 9:16 trong thư mục `dummy_videos/`.
+> 💡 **Hệ thống sẽ tự động:**
+> 1. Kiểm tra môi trường Node.js (hướng dẫn cài nếu thiếu).
+> 2. Tự cài đặt thư viện cho cả Backend & Frontend + tải trình duyệt Playwright Chromium.
+> 3. Tự động nhận diện chưa build (hoặc khi bạn kéo code mới về qua `git pull`) để biên dịch lại giao diện.
+> 4. Khởi chạy server và tự mở trình duyệt web tại: **`http://localhost:3001`**.
 
 ---
 
-## 🏃‍♂️ Khởi Chạy Ứng Dụng (1-Click Cho Windows & macOS)
+### 🛠 Dành Cho Lập Trình Viên Phát Triển (Chế Độ Dev Hot-Reload)
 
-Hệ thống được thiết kế để **tự động hoàn toàn**: khi bạn hoặc người khác clone dự án về, chỉ cần nhấp đúp file chạy tương ứng với hệ điều hành:
+Nếu bạn muốn chỉnh sửa mã nguồn và xem thay đổi ngay lập tức (Hot Module Replacement):
 
-- **Trên Windows**: Nhấp đúp chuột vào file **`Chay-Tren-Windows.bat`**.
-- **Trên macOS**: Nhấp đúp chuột vào file **`Chay-Tren-Mac.command`** trong Finder.
-- **Hoặc dùng Terminal (Mọi OS)**: Chạy lệnh `npm start`.
-
-### ⚡ Hệ thống sẽ tự động thực hiện:
-1. **Kiểm tra Node.js**: Hướng dẫn cài đặt nếu máy tính chưa có.
-2. **Cài đặt thư viện**: Tự động cài dependencies cho cả `backend` và `frontend`, đồng thời chuẩn bị trình duyệt Playwright Chromium.
-3. **Tự động Build**: Tự động nhận diện nếu chưa có bản build giao diện (khi mới clone) hoặc khi bạn vừa kéo code mới về (`git pull`) để biên dịch lại ngay lập tức.
-4. **Khởi chạy ứng dụng**: Bật server và tự động mở trình duyệt web đến địa chỉ: `http://localhost:3001`.
-
----
-
-### 🛠 Dành Cho Lập Trình Viên (Chạy Thủ Công)
-
-**Terminal 1 (Backend Server):**
+**Terminal 1 (Backend Dev Server - Port 3001):**
 ```bash
 cd backend
-npm start
-# Hoặc chế độ dev auto-reload:
 npm run dev
 ```
 
-**Terminal 2 (Frontend UI):**
+**Terminal 2 (Frontend Vite Dev Server - Port 3000):**
 ```bash
 cd frontend
 npm run dev
 ```
-
-Mở trình duyệt truy cập: **`http://localhost:3000`**
+Truy cập: **`http://localhost:3000`** (tự động proxy API sang port 3001).
 
 ---
 
@@ -183,6 +161,7 @@ tiktok-at/
 │   ├── index.html
 │   ├── vite.config.js
 │   └── package.json
+├── docs/                       # Tài liệu kĩ thuật (ARCHITECTURE.md, API.md, TROUBLESHOOTING.md)
 ├── dummy_videos/               # Thư mục chứa video mẫu phục vụ thử nghiệm
 ├── data/                       # Cơ sở dữ liệu SQLite (tiktok.db)
 ├── profiles/                   # Dữ liệu cache & browser profile của từng kênh
@@ -203,22 +182,28 @@ Toàn bộ logic cốt lõi (xử lý lịch đăng, validation profile, browser
 cd backend
 npm test
 ```
-*Kết quả kiểm thử: 32/32 tests passing (100% pass, 0 failures).*
+*Kết quả kiểm thử: 36/36 tests passing (100% pass, 0 failures).*
 
 ---
 
 ## 🛡 Xử Lý Sự Cố Thường Gặp (Troubleshooting)
 
-### 1. TikTok bắt giải Captcha / Xác minh 2 bước (OTP)
+### 1. Trình duyệt báo `Cannot GET /`
+- **Nguyên nhân**: Bạn vừa clone dự án mới và chạy server trực tiếp trước khi build frontend.
+- **Giải pháp**: Hãy luôn khởi chạy ứng dụng bằng **`Chay-Tren-Windows.bat`** hoặc **`Chay-Tren-Mac.command`** (hoặc `npm start`). Hệ thống sẽ tự động build giao diện cho bạn.
+
+### 2. TikTok bắt giải Captcha / Xác minh 2 bước (OTP)
 - **Hiện tượng**: Màn hình dừng hoặc báo lỗi timeout khi login.
 - **Cách xử lý**: Nhấn nút **"Mở Profile"** trên giao diện dashboard. Trình duyệt xuất hiện, bạn giải captcha hoặc nhập mã OTP trực tiếp bằng tay. Phiên đăng nhập sẽ tự động được lưu lại cho các lần chạy tiếp theo.
 
-### 2. Video không nhận diện được nút chèn nhạc
+### 3. Video không nhận diện được nút chèn nhạc
 - **Nguyên nhân**: TikTok cập nhật giao diện Studio sang layout mới.
 - **Giải pháp**: Bản cập nhật hiện tại đã hỗ trợ selector chuẩn `.editor-entrance[data-button-name="sounds"]`, tự động scroll vào vùng nhìn và tự động dismiss hộp thoại hướng dẫn "Phone mode".
 
-### 3. Port 3001 đã bị chiếm dụng
+### 4. Port 3001 đã bị chiếm dụng (`EADDRINUSE`)
 - Khi khởi động qua `Chay-Tren-Windows.bat` hoặc `Chay-Tren-Mac.command`, hệ thống sẽ tự động phát hiện và giải phóng tiến trình cũ bị treo trên port 3001 để khởi chạy an toàn.
+
+> 📖 Xem thêm hướng dẫn chi tiết các trường hợp khác tại: [Cẩm Nang Xử Lý Sự Cố (docs/TROUBLESHOOTING.md)](docs/TROUBLESHOOTING.md)
 
 ---
 

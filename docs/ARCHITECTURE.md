@@ -113,3 +113,31 @@ Mỗi lần `uploadVideo` được kích hoạt, hệ sinh thái tự động ho
 2. **Loại bỏ cờ Automation**: Ẩn `navigator.webdriver`, override các thuộc tính Chromium bị lộ.
 3. **Randomized Human Delays**: Sử dụng khoảng nghỉ ngẫu nhiên mô phỏng tốc độ gõ phím và di chuột của người thật.
 4. **Resilient Popup Handling**: Nhận diện thông minh các modal "Turn on content checks", "Discard post", "Phone mode" để đóng an toàn mà không làm hủy tiến trình tải lên.
+
+---
+
+## 5. Cơ Chế Khởi Chạy Đa Nền Tảng (Unified Cross-Platform Runner)
+
+Để tối ưu trải nghiệm cho người dùng cuối (không cần biết lập trình) và hỗ trợ đồng bộ hoàn hảo giữa **Windows** và **macOS**, hệ thống sử dụng kiến trúc khởi chạy tập trung:
+
+```
+[Chay-Tren-Windows.bat]   \
+                            ──► [scripts/runner.js] ──► [backend/server.js]
+[Chay-Tren-Mac.command]   /          │                        │
+                                     ├── Auto-check & Install ├── Phục vụ API (/api/*)
+                                     │   (Backend + Frontend) └── Phục vụ Frontend (/dist/*)
+                                     ├── Auto-build Frontend      tại http://localhost:3001
+                                     │   (Hash-based detection)
+                                     └── Auto-free port 3001
+```
+
+### Nguyên lý hoạt động:
+1. **Lớp vỏ kích hoạt (OS-level Launchers)**:
+   - `Chay-Tren-Windows.bat`: Được viết chuẩn hóa cú pháp DOS/CMD, tự động dò tìm `node.exe` trên hệ thống và chuyển giao cho `runner.js`.
+   - `Chay-Tren-Mac.command`: Script bash có quyền thực thi `chmod +x`, kiểm tra Node.js và chuyển giao cho `runner.js`.
+2. **Lớp điều phối trung tâm (`scripts/runner.js`)**:
+   - **Tự động cài đặt**: So sánh checksum `package.json` của Backend và Frontend; nếu thiếu `node_modules` hoặc file cấu hình thay đổi thì tự chạy `npm install` và tải Playwright Chromium.
+   - **Tự động biên dịch thông minh (Smart Build)**: Tính toán hàm băm SHA-256 trên toàn bộ cây thư mục mã nguồn `frontend/src/**` và file cấu hình. Nếu phát hiện code mới (sau khi người dùng kéo code về qua `git pull`) hoặc chưa có thư mục `dist/` (khi mới clone), hệ thống sẽ tự động build lại giao diện trước khi bật server.
+   - **Quản lý cổng mạng**: Tự động giải phóng cổng 3001 nếu phát hiện tiến trình cũ bị treo từ các phiên làm việc trước.
+3. **Phục vụ giao diện tích hợp (Single Port Serving)**:
+   - Backend Express lắng nghe trên cổng 3001, vừa phục vụ các REST API endpoint vừa phân phối các static assets từ `frontend/dist`. Người dùng chỉ cần mở 1 địa chỉ duy nhất `http://localhost:3001`.

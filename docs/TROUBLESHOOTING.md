@@ -50,14 +50,30 @@ Tài liệu tổng hợp các tình huống thường gặp khi vận hành hệ
 
 ## 4. Vấn Đề Kết Nối & Môi Trường Máy Tính
 
-### ❓ Triệu chứng: Báo lỗi `Cannot find module 'better-sqlite3'` hoặc `playwright`
-- **Nguyên nhân**: Chưa cài đặt dependencies trong thư mục `backend`.
+### ❓ Triệu chứng: Trình duyệt báo `Cannot GET /` khi mới clone dự án
+- **Nguyên nhân**: Thư mục `frontend/dist` bị `.gitignore` bỏ qua nên khi clone sang máy mới sẽ chưa có bản build giao diện.
 - **Cách xử lý**:
-  ```bash
-  cd backend
-  npm install
-  npx playwright install chromium
-  ```
+  - Không khởi chạy trực tiếp bằng `node backend/server.js`.
+  - Hãy nhấp đúp vào file khởi chạy tương ứng:
+    - Trên **Windows**: Nhấp đúp **`Chay-Tren-Windows.bat`**.
+    - Trên **macOS**: Nhấp đúp **`Chay-Tren-Mac.command`**.
+    - Hoặc chạy lệnh: `npm start` (tại thư mục gốc).
+  - Hệ thống sẽ tự động cài đặt thư viện frontend và biên dịch bản build mới nhất cho bạn.
+
+### ❓ Triệu chứng: Trên Windows, nhấp đúp file `.bat` thì terminal bật lên rồi tắt ngay lập tức
+- **Nguyên nhân**:
+  1. Máy tính chưa được cài đặt **Node.js** hoặc phiên bản Node.js vừa cài chưa được cập nhật vào biến môi trường `PATH`.
+  2. Phiên bản script cũ có lỗi cú pháp phân tích ngoặc đơn trên Windows `cmd.exe`.
+- **Đã khắc phục**:
+  - Script **`Chay-Tren-Windows.bat`** hiện tại đã được viết lại bằng cấu trúc an toàn, tự động tìm kiếm `node.exe` ở các thư mục cài đặt chuẩn (`C:\Program Files\nodejs`, v.v.) và luôn có lệnh dừng màn hình (`pause`) để người dùng luôn đọc được thông báo.
+  - Nếu máy chưa có Node.js: Màn hình sẽ hiện thông báo màu đỏ và chờ bạn nhấn phím bất kỳ để tự động mở trang tải Node.js (https://nodejs.org).
+
+### ❓ Triệu chứng: Báo lỗi `Cannot find module ...` hoặc thiếu Playwright Chromium
+- **Cách xử lý**: Khởi động lại ứng dụng thông qua **`Chay-Tren-Windows.bat`**, **`Chay-Tren-Mac.command`** hoặc lệnh **`npm start`**. Hệ thống sẽ tự động quét và cài đặt đầy đủ mọi thư viện thiếu cho cả Backend và Frontend, đồng thời tự tải trình duyệt Chromium.
+
+### ❓ Triệu chứng: Báo lỗi cổng 3001 đã bị chiếm dụng (`EADDRINUSE`)
+- **Nguyên nhân**: Cửa sổ chạy trước đó bị đóng đột ngột nhưng tiến trình Node.js chạy ngầm vẫn đang giữ cổng 3001.
+- **Đã khắc phục**: Bộ điều phối Runner tự động phát hiện cổng 3001 đang bị chiếm dụng và tự động giải phóng trước khi khởi chạy server mới.
 
 ### ❓ Triệu chứng: Lỗi `Opening in existing browser session` / `Profile is already in use`
 - **Hiện tượng**: Khi bấm "Bắt đầu" hoặc "Mở Profile", terminal báo lỗi Chromium không thể mở vì thư mục profile đang bị một phiên khác chiếm giữ.
