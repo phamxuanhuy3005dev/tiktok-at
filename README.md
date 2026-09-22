@@ -95,34 +95,19 @@ Script sẽ tự động tạo các video chuẩn 9:16 trong thư mục `dummy_v
 
 ---
 
-## 🏃‍♂️ Khởi Chạy Ứng Dụng (Siêu Đơn Giản Cho Người Dùng)
+## 🏃‍♂️ Khởi Chạy Ứng Dụng (1-Click Cho Windows & macOS)
 
-### 💻 Dành Cho Người Dùng Windows
-1. Nhấp đúp chuột vào file **`Chay-Tren-Windows.bat`**.
-2. Script sẽ tự động:
-   - Kiểm tra Node.js (nếu chưa có sẽ hỗ trợ mở link tải hoặc cài tự động).
-   - Tự cài đặt thư viện và trình duyệt Playwright nếu chạy lần đầu.
-   - Tự động bật trình duyệt web đến giao diện ứng dụng tại: `http://localhost:3001`.
+Hệ thống được thiết kế để **tự động hoàn toàn**: khi bạn hoặc người khác clone dự án về, chỉ cần nhấp đúp file chạy tương ứng với hệ điều hành:
 
-### 🍎 Dành Cho Người Dùng macOS
-1. Nhấp đúp chuột vào file **`Chay-Tren-Mac.command`** trong Finder.
-2. Script sẽ tự động:
-   - Kiểm tra Node.js (hướng dẫn cài nếu thiếu).
-   - Chuẩn bị môi trường và tự động bật Safari/Chrome hiển thị giao diện tool tại: `http://localhost:3001`.
+- **Trên Windows**: Nhấp đúp chuột vào file **`Chay-Tren-Windows.bat`**.
+- **Trên macOS**: Nhấp đúp chuột vào file **`Chay-Tren-Mac.command`** trong Finder.
+- **Hoặc dùng Terminal (Mọi OS)**: Chạy lệnh `npm start`.
 
----
-
-### 📦 Cách Đóng Gói (Chia Sẻ Cho Người Khác Dùng)
-Để gửi tool này cho bạn bè hoặc nhân sự sử dụng:
-1. Chạy lệnh build frontend sẵn 1 lần duy nhất:
-   ```bash
-   npm run build
-   ```
-2. Nén toàn bộ thư mục thành file `.zip` (Lưu ý: Bạn **không cần** kèm thư mục `frontend/node_modules`, `trash/`, hoặc các video tạm).
-3. Người nhận chỉ cần giải nén file `.zip` và:
-   - Trên **Windows**: Nhấp đúp `Chay-Tren-Windows.bat`.
-   - Trên **macOS**: Nhấp đúp `Chay-Tren-Mac.command`.
-   - Giao diện quản lý sẽ tự động mở lên trên trình duyệt của họ!
+### ⚡ Hệ thống sẽ tự động thực hiện:
+1. **Kiểm tra Node.js**: Hướng dẫn cài đặt nếu máy tính chưa có.
+2. **Cài đặt thư viện**: Tự động cài dependencies cho cả `backend` và `frontend`, đồng thời chuẩn bị trình duyệt Playwright Chromium.
+3. **Tự động Build**: Tự động nhận diện nếu chưa có bản build giao diện (khi mới clone) hoặc khi bạn vừa kéo code mới về (`git pull`) để biên dịch lại ngay lập tức.
+4. **Khởi chạy ứng dụng**: Bật server và tự động mở trình duyệt web đến địa chỉ: `http://localhost:3001`.
 
 ---
 
@@ -201,7 +186,10 @@ tiktok-at/
 ├── dummy_videos/               # Thư mục chứa video mẫu phục vụ thử nghiệm
 ├── data/                       # Cơ sở dữ liệu SQLite (tiktok.db)
 ├── profiles/                   # Dữ liệu cache & browser profile của từng kênh
-├── start.sh                    # Shell script khởi chạy toàn bộ hệ thống
+├── scripts/                    # Scripts điều phối & kiểm thử
+│   └── runner.js               # Bộ khởi chạy thông minh đa nền tảng
+├── Chay-Tren-Windows.bat       # Phím tắt khởi chạy 1-click cho Windows
+├── Chay-Tren-Mac.command       # Phím tắt khởi chạy 1-click cho macOS
 └── README.md                   # Tài liệu hướng dẫn sử dụng
 ```
 
@@ -229,8 +217,8 @@ npm test
 - **Nguyên nhân**: TikTok cập nhật giao diện Studio sang layout mới.
 - **Giải pháp**: Bản cập nhật hiện tại đã hỗ trợ selector chuẩn `.editor-entrance[data-button-name="sounds"]`, tự động scroll vào vùng nhìn và tự động dismiss hộp thoại hướng dẫn "Phone mode".
 
-### 3. Port 3000 hoặc 3001 đã bị chiếm dụng
-- Chạy script `./start.sh`, script sẽ tự động phát hiện và hỏi bạn có muốn giải phóng port để khởi động lại hay không.
+### 3. Port 3001 đã bị chiếm dụng
+- Khi khởi động qua `Chay-Tren-Windows.bat` hoặc `Chay-Tren-Mac.command`, hệ thống sẽ tự động phát hiện và giải phóng tiến trình cũ bị treo trên port 3001 để khởi chạy an toàn.
 
 ---
 

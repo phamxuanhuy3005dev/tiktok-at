@@ -91,6 +91,34 @@ if (fs.existsSync(frontendDist)) {
     }
     next();
   });
+} else {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.status(503).send(`
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="utf-8">
+        <title>TikTok Studio - Chưa có bản build</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+          .card { background: #1e293b; padding: 36px 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); max-width: 540px; text-align: center; border: 1px solid #334155; }
+          h2 { color: #f59e0b; margin-top: 0; }
+          p { color: #94a3b8; line-height: 1.6; }
+          code { background: #0f172a; color: #38bdf8; padding: 3px 6px; border-radius: 4px; font-size: 13px; font-family: monospace; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>⚠️ Chưa Tìm Thấy Giao Diện (Frontend)</h2>
+          <p>Giao diện web chưa được biên dịch. Vui lòng đóng cửa sổ này và chạy lại file khởi động:</p>
+          <p>• Trên Windows: Nhấp đúp <code>Chay-Tren-Windows.bat</code><br>• Trên macOS: Nhấp đúp <code>Chay-Tren-Mac.command</code></p>
+          <p style="font-size: 13px; color: #64748b;">Hệ thống sẽ tự động cài đặt thư viện và biên dịch giao diện cho bạn.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  });
 }
 
 // Start server
