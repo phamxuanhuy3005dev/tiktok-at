@@ -1513,11 +1513,13 @@ input[type="radio"]:checked {
   transform: translateX(-50%) translateY(4px);
   background: rgba(8, 10, 18, 0.95);
   color: #F1F5F9;
-  font-size: 0.7rem;
-  font-weight: 600;
-  line-height: 1.3;
-  white-space: nowrap;
-  max-width: 260px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: normal;
+  width: max-content;
+  max-width: 280px;
+  text-align: left;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid rgba(255, 63, 182, 0.3);
@@ -1532,6 +1534,52 @@ input[type="radio"]:checked {
 [data-tooltip]:focus-visible::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Hide empty tooltips */
+[data-tooltip=""]::after {
+  display: none !important;
+}
+
+/* Bottom positioning: prevents top-edge clipping on headers/toolbars */
+[data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+
+[data-tooltip-pos="bottom"]:hover::after,
+[data-tooltip-pos="bottom"]:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Bottom-right: places tooltip below and aligns right edge to button, avoiding right-screen overflow */
+[data-tooltip-pos="bottom-right"]::after,
+.dash-tools [data-tooltip]::after {
+  left: auto;
+  right: 0;
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateY(-4px);
+}
+
+[data-tooltip-pos="bottom-right"]:hover::after,
+[data-tooltip-pos="bottom-right"]:focus-visible::after,
+.dash-tools [data-tooltip]:hover::after,
+.dash-tools [data-tooltip]:focus-visible::after {
+  transform: translateY(0);
+}
+
+/* Align right in table actions to avoid horizontal overflow on the right side of the screen */
+.table-actions [data-tooltip]::after {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+
+.table-actions [data-tooltip]:hover::after,
+.table-actions [data-tooltip]:focus-visible::after {
+  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
