@@ -30,7 +30,8 @@ export const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 10000');
 db.pragma('synchronous = NORMAL');
-db.pragma('cache_size = -64000');
+db.pragma('cache_size = -4000'); // 4MB cache - lightweight for low-RAM machines
+db.pragma('wal_autocheckpoint = 1000');
 db.pragma('temp_store = MEMORY');
 
 // Create tables

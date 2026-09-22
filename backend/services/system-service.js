@@ -200,3 +200,30 @@ export function clearDebugFiles(backendDir) {
         logCleared: logFreedBytes > 0
     };
 }
+
+export function clearTrashDirectory(trashDir) {
+    let freedBytes = 0;
+    let deletedEntries = 0;
+    if (!fs.existsSync(trashDir)) return { success: true, deletedEntries: 0, freedBytes: 0, freedMB: 0 };
+
+    try {
+        const entries = fs.readdirSync(trashDir);
+        for (const entry of entries) {
+            const fullPath = path.join(trashDir, entry);
+            try {
+                freedBytes += rmWithRetry(fullPath);
+                deletedEntries++;
+            } catch (e) {
+                console.error(`[ClearTrashDir] Failed to remove ${fullPath}: ${e.message}`);
+            }
+        }
+    } catch (_) {}
+
+    const freedMB = parseFloat((freedBytes / (1024 * 1024)).toFixed(1));
+    return {
+        success: true,
+        deletedEntries,
+        freedBytes,
+        freedMB
+    };
+}

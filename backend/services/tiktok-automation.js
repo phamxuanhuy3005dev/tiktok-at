@@ -23,6 +23,49 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const LOG_FILE = path.join(__dirname, '..', 'automation.log');
+const MAX_LOG_SIZE = 3 * 1024 * 1024; // 3 MB
+
+function appendLogSafe(entry) {
+    fs.appendFile(LOG_FILE, entry, (err) => {
+        if (err) console.error('Failed to write to log file:', err.message);
+    });
+}
+
+function checkAndRotateLog() {
+    try {
+        if (fs.existsSync(LOG_FILE)) {
+            const stats = fs.statSync(LOG_FILE);
+            if (stats.size > MAX_LOG_SIZE) {
+                // Keep the last 512 KB of log content
+                const buffer = Buffer.alloc(512 * 1024);
+                const fd = fs.openSync(LOG_FILE, 'r');
+                const startPos = Math.max(0, stats.size - buffer.length);
+                const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, startPos);
+                fs.closeSync(fd);
+                fs.writeFileSync(LOG_FILE, buffer.subarray(0, bytesRead));
+            }
+        }
+    } catch (_) {}
+}
+
+/**
+ * Automatically pauses and mutes video preview elements in TikTok Studio to prevent
+ * high CPU usage from continuous 1080p/60fps video decoding on older hardware.
+ */
+export async function pausePreviewVideos(page) {
+    if (!page || page.isClosed()) return;
+    try {
+        await page.evaluate(() => {
+            const vids = document.querySelectorAll('video');
+            vids.forEach(v => {
+                try {
+                    v.pause();
+                    v.muted = true;
+                } catch (_) {}
+            });
+        });
+    } catch (_) {}
+}
 
 export const describeScheduleInput = (input) => {
     const hint = getScheduleHintText(input) || 'no-hint';
@@ -431,6 +474,8 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
         return 0;
     }
 
+    checkAndRotateLog();
+
     const userDataDir = path.join(PROFILES_DIR, profile.name);
     let uploadedCount = 0;
     let lastScheduledTime = null;
@@ -446,11 +491,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
     const log = (msg) => {
         const entry = `[${new Date().toISOString()}] [${profile.name}] ${msg}\n`;
         console.log(entry.trim());
-        try {
-            fs.appendFileSync(LOG_FILE, entry);
-        } catch (e) {
-            console.error('Failed to write to log file:', e.message);
-        }
+        appendLogSafe(entry);
     };
 
     try {
@@ -606,14 +647,15 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
             await dismissOnboardingModals(page, log);
             await dismissPopups(page);
             await page.waitForTimeout(1000);
-            // Gá»i láº§n 2 Ä‘á»ƒ Ä‘áº£m báº£o popup Ä‘Ã£ Ä‘Æ°á»£c dismiss (popup cÃ³ thá»ƒ xuáº¥t hiá»‡n cháº­m)
+            // Gá» i láº§n 2 Ä‘á»ƒ Ä‘áº£m báº£o popup Ä‘Ã£ Ä‘Æ°á»£c dismiss (popup cÃ³ thá»ƒ xuáº¥t hiá»‡n cháº­m)
             await dismissPopups(page);
+            await pausePreviewVideos(page);
 
             // Wait for upload to complete
             // Cháº¡y dismissPopups liÃªn tá»¥c trong khi Ä‘á»£i Ä‘á»ƒ trÃ¡nh popup block upload
             try {
                 const uploadCompletedPromise = (async () => {
-                    // Äá»£i Cancel button cá»§a upload progress xuáº¥t hiá»‡n trÆ°á»›c
+                    // Ä á»£i Cancel button cá»§a upload progress xuáº¥t hiá»‡n trÆ°á»›c
                     const uploadProgressCancel = page.locator('.upload-progress button:has-text("Cancel"), [class*="upload"] button:has-text("Cancel"), button[class*="cancel"]').first();
                     let cancelDetected = false;
                     try {
@@ -626,6 +668,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                         await page.waitForTimeout(2000);
                         await dismissPopups(page);
                         await dismissOnboardingModals(page, log);
+                        await pausePreviewVideos(page);
 
                         // Kiá»ƒm tra upload xong: Post button enabled vÃ  Cancel cá»§a upload progress biáº¿n máº¥t
                         const postBtn = await page.$('button[data-e2e="post_video_button"]:not([disabled]), button.common-button-post-video:not([disabled])');
@@ -637,6 +680,7 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                 })();
 
                 await uploadCompletedPromise;
+                await pausePreviewVideos(page);
                 await page.waitForTimeout(2000);
 
                 // Dismiss popups & tooltips that appeared after video upload completion
@@ -829,7 +873,9 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                     }
                 } catch (e) {
                     log(`Add sound task encountered error: ${e.message}`);
-                    await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_sound_fail.png`) }).catch(() => null);
+                    if (process.env.TIKTOK_DEBUG_SCREENSHOTS === 'true') {
+                        await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_sound_fail.png`) }).catch(() => null);
+                    }
                 }
             } else {
                 log(`set_music tắt: Bỏ qua Edit video và chọn nhạc.`);
@@ -987,7 +1033,9 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                         await fillScheduleInput(page, scheduleInputs.time, timeValue, 'Time', log);
                         await page.waitForTimeout(2000);
 
-                        await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_autoincrement_${i + 1}.png`) }).catch(() => null);
+                        if (process.env.TIKTOK_DEBUG_SCREENSHOTS === 'true') {
+                            await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_autoincrement_${i + 1}.png`) }).catch(() => null);
+                        }
 
                     } else if (i === 0) {
                         log(`Video 1: Posting immediately (Public).`);
@@ -1032,7 +1080,9 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                             await page.waitForTimeout(2000);
                         }
 
-                        await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_autoincrement_${i + 1}.png`) }).catch(() => null);
+                        if (process.env.TIKTOK_DEBUG_SCREENSHOTS === 'true') {
+                            await page.screenshot({ path: path.join(__dirname, '..', `debug_${profile.name}_autoincrement_${i + 1}.png`) }).catch(() => null);
+                        }
                     }
                 } catch (e) {
                     log(`Auto-increment scheduling failed: ${e.message}`);
@@ -1180,16 +1230,25 @@ export async function uploadVideo(profile, videoFolder, videos, limitUploads = f
                     log(`ERROR deleting file: ${err.message}`);
                 }
 
-                // Wait before next loop iteration to let things settle
+                // Wait before next loop iteration to let things settle and recycle page to prevent RAM accumulation
                 if (i < videos.length - 1) {
-                    log(`Preparing for next video...`);
-                    await page.waitForTimeout(5000);
+                    log(`Preparing for next video (recycling tab to free memory)...`);
+                    await page.close().catch(() => null);
+                    await new Promise(r => setTimeout(r, 2000));
+                    page = await browser.newPage();
+                }
+            } else {
+                if (i < videos.length - 1) {
+                    log(`Upload did not finalize. Recycling tab for next video...`);
+                    await page.close().catch(() => null);
+                    await new Promise(r => setTimeout(r, 2000));
+                    page = await browser.newPage();
                 }
             }
         }
         return uploadedCount;
     } catch (error) {
-        fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] CRITICAL ERROR: ${error.message}\n${error.stack}\n`);
+        appendLogSafe(`[${new Date().toISOString()}] CRITICAL ERROR: ${error.message}\n${error.stack}\n`);
         throw error;
     } finally {
         log(`Automation session ended.`);
@@ -1204,9 +1263,7 @@ export async function runTikTokLogin(profile) {
     const log = (msg) => {
         const entry = `[${new Date().toISOString()}] [${profile.name}][LOGIN] ${msg}\n`;
         console.log(entry.trim());
-        try {
-            fs.appendFileSync(LOG_FILE, entry);
-        } catch (e) {}
+        appendLogSafe(entry);
     };
 
     const browserOptions = buildBrowserLaunchOptions(profile);
@@ -1269,9 +1326,7 @@ export async function addFavoriteMusic(profile, searchTerm) {
     const log = (msg) => {
         const entry = `[${new Date().toISOString()}] [${profile.name}][FAV-MUSIC] ${msg}\n`;
         console.log(entry.trim());
-        try {
-            fs.appendFileSync(LOG_FILE, entry);
-        } catch (e) {}
+        appendLogSafe(entry);
     };
 
     let videoPath = null;

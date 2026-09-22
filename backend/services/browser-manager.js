@@ -6,13 +6,16 @@ import { PROFILES_DIR, db } from '../db.js';
 import { manualBrowsers, loggingInProfiles } from './tracker.js';
 
 const execAsync = promisify(exec);
+const lastSyncedCookies = new Map(); // profileId -> json string cache
+
+const LOCK_FILES = ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile'];
 
 /**
  * Query OS process table to find all Chromium processes (main + helpers)
  * whose command line contains this profile user-data-dir.
  */
 export async function getProfilePids(userDataDir) {
-    if (!userDataDir) return [];
+    if (!userDataDir || !fs.existsSync(userDataDir)) return [];
     try {
         if (process.platform === 'win32') {
             const dirName = path.basename(userDataDir).replace(/["'\\]/g, '');
@@ -45,58 +48,60 @@ export async function getProfilePids(userDataDir) {
 /**
  * Clean up OS-level lock files and terminate ALL lingering/orphaned Chromium processes
  * (main, GPU, Network, Renderers) for a specific profile's user-data-dir.
+ * Optimized with fast-path: skips heavy process queries when no locks exist.
  */
 export async function releaseProfileLocks(userDataDir, profileName) {
     if (!userDataDir || !fs.existsSync(userDataDir)) return;
+
+    // Fast-path: Check if any lock file actually exists on disk
+    let foundLocks = [];
+    for (const file of LOCK_FILES) {
+        const p = path.join(userDataDir, file);
+        try {
+            const s = fs.lstatSync(p);
+            if (s.isSymbolicLink() || s.isFile() || s.isSocket()) {
+                foundLocks.push(p);
+            }
+        } catch (e) {}
+    }
+
+    // If no lock files exist, Chromium is not running on this profile.
+    // Exit immediately (0ms) instead of running slow PowerShell/ps queries.
+    if (foundLocks.length === 0) {
+        return;
+    }
 
     // 1. Terminate all Chromium processes matching this profile's user-data-dir
     const pids = await getProfilePids(userDataDir);
     if (pids.length > 0) {
         console.log(`[${profileName}] Found ${pids.length} lingering Chromium processes for profile. Terminating...`);
         for (const pid of pids) {
-            try { process.kill(pid, 'SIGTERM'); } catch (e) {}
+            try {
+                if (process.platform === 'win32') {
+                    // Instant tree kill on Windows via native taskkill
+                    await execAsync(`taskkill /F /T /PID ${pid}`).catch(() => {});
+                } else {
+                    process.kill(pid, 'SIGKILL');
+                }
+            } catch (e) {}
         }
-
-        // Wait up to 300ms for graceful exit
-        await new Promise(r => setTimeout(r, 200));
-
-        const remaining = await getProfilePids(userDataDir);
-        for (const pid of remaining) {
-            try { process.kill(pid, 'SIGKILL'); } catch (e) {}
-        }
-
-        // Poll briefly until all processes disappear from the process table
-        let pollCount = 0;
-        while (pollCount < 15) {
-            const left = await getProfilePids(userDataDir);
-            if (left.length === 0) break;
-            await new Promise(r => setTimeout(r, 60));
-            pollCount++;
-        }
+        await new Promise(r => setTimeout(r, 100));
     }
 
-    let hadLocks = pids.length > 0;
-
-    // 2. Unlink lock and socket files if still present on disk
-    for (const file of ['SingletonLock', 'SingletonCookie', 'SingletonSocket', 'lockfile']) {
-        const p = path.join(userDataDir, file);
+    // 2. Unlink lock and socket files
+    for (const lockPath of foundLocks) {
         try {
-            const s = fs.lstatSync(p);
-            if (s.isSymbolicLink() || s.isFile() || s.isSocket()) {
-                fs.unlinkSync(p);
-                hadLocks = true;
-            }
+            fs.unlinkSync(lockPath);
         } catch (e) {}
     }
 
-    // Only wait settling delay if locks or processes were actively cleaned up
-    if (hadLocks) {
-        await new Promise(r => setTimeout(r, 150));
-    }
+    // Brief settling delay only when locks were actively cleaned up
+    await new Promise(r => setTimeout(r, 100));
 }
 
 /**
- * Sync cookies from an open BrowserContext to SQLite database
+ * Sync cookies from an open BrowserContext to SQLite database.
+ * Optimized: memoized to avoid redundant database writes when cookies are unchanged.
  */
 export async function syncCookiesToDatabase(browser, profileId) {
     if (!browser || !profileId) return;
@@ -105,7 +110,12 @@ export async function syncCookiesToDatabase(browser, profileId) {
         if (Array.isArray(cookies) && cookies.length > 0) {
             const hasSession = cookies.some(c => c.name === 'sessionid' || c.name === 'sessionid_ss' || c.name === 'sid_tt');
             if (hasSession) {
-                db.prepare('UPDATE profiles SET cookies = ? WHERE id = ?').run(JSON.stringify(cookies), profileId);
+                const cookiesJson = JSON.stringify(cookies);
+                if (lastSyncedCookies.get(profileId) === cookiesJson) {
+                    return; // Skip identical cookie write to disk
+                }
+                lastSyncedCookies.set(profileId, cookiesJson);
+                db.prepare('UPDATE profiles SET cookies = ? WHERE id = ?').run(cookiesJson, profileId);
             }
         }
     } catch (e) {}
@@ -120,12 +130,15 @@ export async function closeProfileBrowser(profileId, profileName) {
         const browser = manualBrowsers.get(profileId);
         manualBrowsers.delete(profileId);
         await syncCookiesToDatabase(browser, profileId);
+        lastSyncedCookies.delete(profileId);
         try {
             await browser.close();
             console.log(`[${profileName}] Manual browser context closed successfully`);
         } catch (e) {
             console.warn(`[${profileName}] Error closing manual browser:`, e.message);
         }
+    } else {
+        lastSyncedCookies.delete(profileId);
     }
 
     const userDataDir = path.join(PROFILES_DIR, profileName);

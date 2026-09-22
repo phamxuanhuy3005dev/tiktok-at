@@ -36,6 +36,9 @@ try {
   ).run();
   console.log('[System] Reset stuck profiles to idle state');
 
+  // Checkpoint WAL to keep DB files small on disk
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (_) {}
+
   const allProfiles = db.prepare('SELECT name FROM profiles').all();
   for (const p of allProfiles) {
     const dir = path.join(PROFILES_DIR, p.name);
@@ -54,6 +57,7 @@ const gracefulShutdown = async (signal) => {
     } catch (e) {}
   }
   manualBrowsers.clear();
+  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (_) {}
   process.exit(0);
 };
 

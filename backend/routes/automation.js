@@ -127,7 +127,7 @@ router.post('/open-profile', async (req, res) => {
             await syncCookiesToDatabase(browser, profile.id);
         };
 
-        const syncTimer = setInterval(syncCookies, 3000);
+        const syncTimer = setInterval(syncCookies, 15000);
 
         browser.on('close', () => {
             clearInterval(syncTimer);
