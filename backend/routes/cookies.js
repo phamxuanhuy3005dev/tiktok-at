@@ -5,6 +5,7 @@ import { db, PROFILES_DIR } from '../db.js';
 import { parseCookies, captureBrowserCookies, extractCookiesFromDisk } from '../services/cookie-service.js';
 import { manualBrowsers } from '../services/tracker.js';
 import { createProfileRecord } from '../profile-store.js';
+import { createGroup } from '../group-store.js';
 import { closeProfileBrowser } from '../services/browser-manager.js';
 
 const router = express.Router();
@@ -207,6 +208,125 @@ router.get('/profiles/export-cookies-json', (req, res) => {
     }
 });
 
+export function importCookiesJsonRecords(database, items) {
+    if (!Array.isArray(items)) {
+        throw new Error('Dữ liệu phải là một mảng các profile JSON');
+    }
+
+    const results = { updated: 0, created: 0, errors: [] };
+    const existingProfiles = database.prepare('SELECT id, name, group_id, cookies FROM profiles').all();
+    const byName = new Map(existingProfiles.map(p => [p.name.toLowerCase(), p]));
+
+    const existingGroups = database.prepare('SELECT id, name FROM groups').all();
+    const groupById = new Map(existingGroups.map(g => [g.id, g]));
+    const groupByName = new Map(existingGroups.map(g => [g.name.toLowerCase().trim(), g]));
+
+    for (const item of items) {
+        const name = (item.name || item.profile_name || '').trim();
+        if (!name) {
+            results.errors.push('Bỏ qua dòng không có tên profile');
+            continue;
+        }
+
+        let cookieStr = null;
+        if (item.cookies !== undefined && item.cookies !== null) {
+            if (typeof item.cookies === 'string') {
+                const trimmed = item.cookies.trim();
+                if (trimmed && trimmed !== '[]' && trimmed !== '{}') {
+                    cookieStr = trimmed;
+                }
+            } else if (Array.isArray(item.cookies)) {
+                if (item.cookies.length > 0) {
+                    cookieStr = JSON.stringify(item.cookies);
+                }
+            } else if (typeof item.cookies === 'object' && Object.keys(item.cookies).length > 0) {
+                cookieStr = JSON.stringify(item.cookies);
+            }
+        }
+
+        // Resolve group: support item.group (string or object), item.group_name, item.group_id
+        let targetGroupId = null;
+        let groupNameInput = '';
+        if (typeof item.group === 'string') groupNameInput = item.group;
+        else if (item.group && typeof item.group.name === 'string') groupNameInput = item.group.name;
+        else if (typeof item.group_name === 'string') groupNameInput = item.group_name;
+        groupNameInput = groupNameInput.trim();
+
+        let rawGroupId = '';
+        if (typeof item.group_id === 'string') rawGroupId = item.group_id;
+        else if (item.group && typeof item.group.id === 'string') rawGroupId = item.group.id;
+        rawGroupId = rawGroupId.trim();
+
+        if (groupNameInput) {
+            let matchedGroup = groupByName.get(groupNameInput.toLowerCase());
+            if (!matchedGroup) {
+                try {
+                    matchedGroup = createGroup(database, { name: groupNameInput });
+                    groupById.set(matchedGroup.id, matchedGroup);
+                    groupByName.set(matchedGroup.name.toLowerCase().trim(), matchedGroup);
+                } catch (err) {
+                    matchedGroup = database.prepare('SELECT id, name FROM groups WHERE LOWER(name) = LOWER(?)').get(groupNameInput);
+                    if (matchedGroup) {
+                        groupById.set(matchedGroup.id, matchedGroup);
+                        groupByName.set(matchedGroup.name.toLowerCase().trim(), matchedGroup);
+                    }
+                }
+            }
+            if (matchedGroup) {
+                targetGroupId = matchedGroup.id;
+            }
+        } else if (rawGroupId && groupById.has(rawGroupId)) {
+            targetGroupId = rawGroupId;
+        }
+
+        const existing = byName.get(name.toLowerCase());
+        if (existing) {
+            const updates = [];
+            const params = [];
+            if (cookieStr) {
+                updates.push('cookies = ?');
+                params.push(cookieStr);
+            }
+            if (targetGroupId) {
+                updates.push('group_id = ?');
+                params.push(targetGroupId);
+            }
+            if (updates.length > 0) {
+                params.push(existing.id);
+                database.prepare(`UPDATE profiles SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+                if (targetGroupId) existing.group_id = targetGroupId;
+                if (cookieStr) existing.cookies = cookieStr;
+            }
+            results.updated++;
+        } else {
+            try {
+                const newProfile = createProfileRecord(database, {
+                    name,
+                    cookies: cookieStr,
+                    auto_increment_schedule: item.auto_increment_schedule !== undefined ? (item.auto_increment_schedule ? 1 : 0) : 1,
+                    schedule_interval: Number(item.schedule_interval) || 10,
+                    set_music: item.set_music !== undefined ? (item.set_music ? 1 : 0) : 1,
+                    remove_title: item.remove_title !== undefined ? (item.remove_title ? 1 : 0) : 1,
+                    need_content_check: item.need_content_check !== undefined ? (item.need_content_check ? 1 : 0) : 0,
+                    group_id: targetGroupId,
+                    video_folder: item.video_folder || null
+                });
+                byName.set(name.toLowerCase(), {
+                    id: newProfile.id,
+                    name: newProfile.name,
+                    group_id: newProfile.group_id,
+                    cookies: newProfile.cookies
+                });
+                results.created++;
+            } catch (err) {
+                results.errors.push(`Lỗi tạo profile "${name}": ${err.message}`);
+            }
+        }
+    }
+
+    return results;
+}
+
 // POST /api/profiles/import-cookies-json — Import cookies JSON exported from another machine
 router.post('/profiles/import-cookies-json', (req, res) => {
     try {
@@ -219,53 +339,7 @@ router.post('/profiles/import-cookies-json', (req, res) => {
             }
         }
 
-        const results = { updated: 0, created: 0, errors: [] };
-        const existingProfiles = db.prepare('SELECT id, name FROM profiles').all();
-        const byName = new Map(existingProfiles.map(p => [p.name.toLowerCase(), p]));
-
-        const updateCookieStmt = db.prepare('UPDATE profiles SET cookies = ? WHERE id = ?');
-
-        for (const item of items) {
-            const name = (item.name || item.profile_name || '').trim();
-            if (!name) {
-                results.errors.push('Bỏ qua dòng không có tên profile');
-                continue;
-            }
-
-            let cookieStr = null;
-            if (item.cookies) {
-                if (typeof item.cookies === 'string') cookieStr = item.cookies;
-                else if (Array.isArray(item.cookies) || typeof item.cookies === 'object') {
-                    cookieStr = JSON.stringify(item.cookies);
-                }
-            }
-
-            const existing = byName.get(name.toLowerCase());
-            if (existing) {
-                if (cookieStr) {
-                    updateCookieStmt.run(cookieStr, existing.id);
-                    results.updated++;
-                }
-            } else {
-                try {
-                    const newProfile = createProfileRecord(db, {
-                        name,
-                        cookies: cookieStr,
-                        auto_increment_schedule: item.auto_increment_schedule !== undefined ? (item.auto_increment_schedule ? 1 : 0) : 1,
-                        schedule_interval: Number(item.schedule_interval) || 10,
-                        set_music: item.set_music !== undefined ? (item.set_music ? 1 : 0) : 1,
-                        remove_title: item.remove_title !== undefined ? (item.remove_title ? 1 : 0) : 1,
-                        need_content_check: item.need_content_check !== undefined ? (item.need_content_check ? 1 : 0) : 0,
-                        group_id: item.group_id || null,
-                        video_folder: item.video_folder || null
-                    });
-                    byName.set(name.toLowerCase(), { id: newProfile.id, name: newProfile.name });
-                    results.created++;
-                } catch (err) {
-                    results.errors.push(`Lỗi tạo profile "${name}": ${err.message}`);
-                }
-            }
-        }
+        const results = importCookiesJsonRecords(db, items);
 
         res.json({
             success: true,
