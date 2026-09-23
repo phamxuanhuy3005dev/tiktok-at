@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
-import { RefreshCw, CheckCircle2, AlertTriangle, X, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  RotateCcw,
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
 
 const SingleSessionBanner = ({ session, onDismiss }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -28,9 +36,13 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
     progressPct = 100;
   } else if (isRetrying) {
     const retryTotal = session.retry?.total || 1;
-    progressPct = Math.round(((retryCompletedCount + retryFailedCount) / retryTotal) * 100);
+    progressPct = Math.round(
+      ((retryCompletedCount + retryFailedCount) / retryTotal) * 100,
+    );
   } else if (totalProfiles > 0) {
-    progressPct = Math.round(((round1CompletedCount + round1FailedCount) / totalProfiles) * 100);
+    progressPct = Math.round(
+      ((round1CompletedCount + round1FailedCount) / totalProfiles) * 100,
+    );
   }
 
   return (
@@ -43,37 +55,83 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
         marginBottom: '14px',
         padding: '14px 18px',
         borderRadius: '12px',
-        border: isRunningRound1 || isRetrying
-          ? '1px solid rgba(59, 130, 246, 0.4)'
-          : allPassed
-          ? '1px solid rgba(16, 185, 129, 0.4)'
-          : '1px solid rgba(245, 158, 11, 0.4)',
-        background: isRunningRound1 || isRetrying
-          ? 'rgba(59, 130, 246, 0.08)'
-          : allPassed
-          ? 'rgba(16, 185, 129, 0.08)'
-          : 'rgba(245, 158, 11, 0.08)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        border:
+          isRunningRound1 || isRetrying
+            ? '1px solid rgba(59, 130, 246, 0.4)'
+            : allPassed
+              ? '1px solid rgba(16, 185, 129, 0.4)'
+              : '1px solid rgba(245, 158, 11, 0.4)',
+        background:
+          isRunningRound1 || isRetrying
+            ? 'rgba(59, 130, 246, 0.08)'
+            : allPassed
+              ? 'rgba(16, 185, 129, 0.08)'
+              : 'rgba(245, 158, 11, 0.08)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           {isRunningRound1 && (
-            <RefreshCw className="animate-spin" size={22} style={{ color: '#3B82F6', flexShrink: 0 }} />
+            <RefreshCw
+              className="animate-spin"
+              size={22}
+              style={{ color: '#3B82F6', flexShrink: 0 }}
+            />
           )}
           {isRetrying && (
-            <RotateCcw className="animate-spin" size={22} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <RotateCcw
+              className="animate-spin"
+              size={22}
+              style={{ color: '#F59E0B', flexShrink: 0 }}
+            />
           )}
           {isCompleted && allPassed && (
-            <CheckCircle2 size={22} style={{ color: '#10B981', flexShrink: 0 }} />
+            <CheckCircle2
+              size={22}
+              style={{ color: '#10B981', flexShrink: 0 }}
+            />
           )}
           {isCompleted && !allPassed && (
-            <AlertTriangle size={22} style={{ color: '#F59E0B', flexShrink: 0 }} />
+            <AlertTriangle
+              size={22}
+              style={{ color: '#F59E0B', flexShrink: 0 }}
+            />
           )}
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-              <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--text)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '4px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: '0.98rem',
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                }}
+              >
                 {session.title || 'Tiến trình upload'}
               </h4>
               <span
@@ -83,33 +141,75 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
                   borderRadius: '12px',
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  background: isRunningRound1 ? 'rgba(59,130,246,0.2)' : isRetrying ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)',
-                  color: isRunningRound1 ? '#60A5FA' : isRetrying ? '#FBBF24' : '#34D399'
+                  background: isRunningRound1
+                    ? 'rgba(59,130,246,0.2)'
+                    : isRetrying
+                      ? 'rgba(245,158,11,0.2)'
+                      : 'rgba(16,185,129,0.2)',
+                  color: isRunningRound1
+                    ? '#60A5FA'
+                    : isRetrying
+                      ? '#FBBF24'
+                      : '#34D399',
                 }}
               >
-                {isRunningRound1 ? `Lượt 1 (${round1CompletedCount + round1FailedCount}/${totalProfiles})` : isRetrying ? `Lượt Retry (${retryCompletedCount + retryFailedCount}/${session.retry?.total || 0})` : 'Hoàn thành'}
+                {isRunningRound1
+                  ? `Lượt 1 (${round1CompletedCount + round1FailedCount}/${totalProfiles})`
+                  : isRetrying
+                    ? `Lượt Retry (${retryCompletedCount + retryFailedCount}/${session.retry?.total || 0})`
+                    : 'Hoàn thành'}
               </span>
             </div>
 
-            <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '0.86rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.4,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
               {session.message}
             </p>
 
             {/* Visual Progress Bar */}
-            <div style={{ marginTop: '8px', width: '100%', height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div
+              style={{
+                marginTop: '8px',
+                width: '100%',
+                height: '5px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '3px',
+                overflow: 'hidden',
+              }}
+            >
               <div
                 style={{
                   width: `${progressPct}%`,
                   height: '100%',
-                  background: isRunningRound1 ? '#3B82F6' : isRetrying ? '#F59E0B' : '#10B981',
-                  transition: 'width 0.3s ease'
+                  background: isRunningRound1
+                    ? '#3B82F6'
+                    : isRetrying
+                      ? '#F59E0B'
+                      : '#10B981',
+                  transition: 'width 0.3s ease',
                 }}
               />
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexShrink: 0,
+          }}
+        >
           {isCompleted && (
             <button
               type="button"
@@ -124,10 +224,15 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
                 fontSize: '0.8rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '4px',
               }}
             >
-              Chi tiết {showDetails ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              Chi tiết{' '}
+              {showDetails ? (
+                <ChevronUp size={13} />
+              ) : (
+                <ChevronDown size={13} />
+              )}
             </button>
           )}
 
@@ -145,7 +250,7 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
               }}
             >
               <X size={16} />
@@ -165,41 +270,116 @@ const SingleSessionBanner = ({ session, onDismiss }) => {
               marginTop: '12px',
               paddingTop: '12px',
               borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-              fontSize: '0.82rem'
+              fontSize: '0.82rem',
             }}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '10px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '8px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: '10px',
+                marginBottom: '10px',
+              }}
+            >
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                }}
+              >
                 <span style={{ color: 'var(--text-secondary)' }}>Lượt 1:</span>
-                <strong style={{ color: '#10B981', marginLeft: '6px' }}>{summary.round1Completed?.length || 0} thành công</strong>,
-                <strong style={{ color: summary.round1Failed?.length ? '#EF4444' : 'var(--text)', marginLeft: '4px' }}>
+                <strong style={{ color: '#10B981', marginLeft: '6px' }}>
+                  {summary.round1Completed?.length || 0} thành công
+                </strong>
+                ,
+                <strong
+                  style={{
+                    color: summary.round1Failed?.length
+                      ? '#EF4444'
+                      : 'var(--text)',
+                    marginLeft: '4px',
+                  }}
+                >
                   {summary.round1Failed?.length || 0} lỗi
                 </strong>
               </div>
 
               {summary.retryCompleted !== undefined && (
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '8px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Lượt Retry:</span>
-                  <strong style={{ color: '#10B981', marginLeft: '6px' }}>{summary.retryCompleted?.length || 0} thành công</strong>,
-                  <strong style={{ color: summary.retryFailed?.length ? '#EF4444' : 'var(--text)', marginLeft: '4px' }}>
+                <div
+                  style={{
+                    background: 'rgba(0,0,0,0.2)',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Lượt Retry:
+                  </span>
+                  <strong style={{ color: '#10B981', marginLeft: '6px' }}>
+                    {summary.retryCompleted?.length || 0} thành công
+                  </strong>
+                  ,
+                  <strong
+                    style={{
+                      color: summary.retryFailed?.length
+                        ? '#EF4444'
+                        : 'var(--text)',
+                      marginLeft: '4px',
+                    }}
+                  >
                     {summary.retryFailed?.length || 0} vẫn lỗi
                   </strong>
                 </div>
               )}
 
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px 10px', borderRadius: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Tổng kết:</span>
-                <strong style={{ color: '#10B981', marginLeft: '6px' }}>{summary.totalSucceeded}/{summary.totalProfiles} thành công</strong>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                }}
+              >
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  Tổng kết:
+                </span>
+                <strong style={{ color: '#10B981', marginLeft: '6px' }}>
+                  {summary.totalSucceeded}/{summary.totalProfiles} thành công
+                </strong>
               </div>
             </div>
 
             {summary.finalFailed && summary.finalFailed.length > 0 && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px 10px', borderRadius: '8px' }}>
-                <strong style={{ color: '#EF4444', display: 'block', marginBottom: '4px' }}>Danh sách profile lỗi sau lượt retry:</strong>
-                <ul style={{ margin: 0, paddingLeft: '18px', color: 'var(--text)' }}>
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                }}
+              >
+                <strong
+                  style={{
+                    color: '#EF4444',
+                    display: 'block',
+                    marginBottom: '4px',
+                  }}
+                >
+                  Danh sách profile lỗi sau lượt retry:
+                </strong>
+                <ul
+                  style={{
+                    margin: 0,
+                    paddingLeft: '18px',
+                    color: 'var(--text)',
+                  }}
+                >
                   {summary.finalFailed.map((p) => (
                     <li key={p.id || p.name}>
-                      <strong>{p.name}</strong>: <span style={{ color: 'var(--text-secondary)' }}>{p.error || 'Lỗi không xác định'}</span>
+                      <strong>{p.name}</strong>:{' '}
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {p.error || 'Lỗi không xác định'}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -216,11 +396,12 @@ const BatchStatusBanner = ({ batchStatus, onDismiss }) => {
   if (!batchStatus) return null;
 
   // Support array of sessions or single object
-  const sessions = Array.isArray(batchStatus.sessions) && batchStatus.sessions.length > 0
-    ? batchStatus.sessions.filter(s => s && s.status && s.status !== 'idle')
-    : batchStatus.status && batchStatus.status !== 'idle'
-    ? [batchStatus]
-    : [];
+  const sessions =
+    Array.isArray(batchStatus.sessions) && batchStatus.sessions.length > 0
+      ? batchStatus.sessions.filter((s) => s && s.status && s.status !== 'idle')
+      : batchStatus.status && batchStatus.status !== 'idle'
+        ? [batchStatus]
+        : [];
 
   if (sessions.length === 0) return null;
 

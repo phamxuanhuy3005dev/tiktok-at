@@ -10,24 +10,32 @@ export const STATUS_LABELS = {
   adding_favorite_music: 'Đang thêm nhạc',
   success: 'Thành công',
   error: 'Lỗi',
-  no_videos: 'Không có video'
+  no_videos: 'Không có video',
 };
 
 export const getStatusColor = (status = 'idle') => {
   switch (status) {
-    case 'uploading': return 'var(--accent)';
-    case 'logging_in': return 'var(--success)';
-    case 'changing_avatar': return 'var(--status-avatar)';
-    case 'adding_favorite_music': return 'var(--status-music-active)';
-    case 'success': return 'var(--success)';
-    case 'error': return 'var(--error)';
-    case 'no_videos': return 'var(--status-skip)';
-    default: return 'var(--text-muted)';
+    case 'uploading':
+      return 'var(--accent)';
+    case 'logging_in':
+      return 'var(--success)';
+    case 'changing_avatar':
+      return 'var(--status-avatar)';
+    case 'adding_favorite_music':
+      return 'var(--status-music-active)';
+    case 'success':
+      return 'var(--success)';
+    case 'error':
+      return 'var(--error)';
+    case 'no_videos':
+      return 'var(--status-skip)';
+    default:
+      return 'var(--text-muted)';
   }
 };
 
 // Backwards-compatible alias.
 export const statusColor = getStatusColor;
 
-export const getStatusLabel = (status = 'idle') => STATUS_LABELS[status] || status || 'Sẵn sàng';
-
+export const getStatusLabel = (status = 'idle') =>
+  STATUS_LABELS[status] || status || 'Sẵn sàng';

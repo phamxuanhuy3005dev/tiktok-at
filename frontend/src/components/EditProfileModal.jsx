@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Trash2,
   Video,
-  X
+  X,
 } from 'lucide-react';
 import { getStatusColor, getStatusLabel } from '../status';
 
@@ -26,7 +26,7 @@ const EditProfileModal = ({
   onUpdateRemoveTitle,
   onUpdateNeedContentCheck,
   musicSearchTerm,
-  onUpdateMusicSearchTerm
+  onUpdateMusicSearchTerm,
 }) => {
   if (!profile) return null;
 
@@ -77,11 +77,13 @@ const EditProfileModal = ({
             </div>
 
             {/* Scrollable Body */}
-            <div style={{
-              overflowY: 'auto',
-              flex: 1,
-              paddingRight: '4px'
-            }}>
+            <div
+              style={{
+                overflowY: 'auto',
+                flex: 1,
+                paddingRight: '4px',
+              }}
+            >
               {/* Group */}
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">
@@ -90,7 +92,11 @@ const EditProfileModal = ({
                 </div>
                 <select
                   className="input"
-                  style={{ fontSize: '0.75rem', padding: '8px 12px', width: '100%' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '8px 12px',
+                    width: '100%',
+                  }}
                   value={profile.group_id || ''}
                   onChange={(e) => {
                     const v = e.target.value;
@@ -99,7 +105,9 @@ const EditProfileModal = ({
                 >
                   <option value="">Không thuộc nhóm nào</option>
                   {groups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -113,7 +121,11 @@ const EditProfileModal = ({
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     className="input"
-                    style={{ fontSize: '0.75rem', padding: '8px 12px', flex: 1 }}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '8px 12px',
+                      flex: 1,
+                    }}
                     placeholder="Mặc định hệ thống"
                     value={profile.video_folder || ''}
                     onChange={(e) => onUpdateFolder(profile.id, e.target.value)}
@@ -138,51 +150,124 @@ const EditProfileModal = ({
                   <textarea
                     className="input"
                     rows={3}
-                    style={{ fontSize: '0.75rem', padding: '8px 12px', flex: 1, resize: 'vertical', minHeight: '64px' }}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '8px 12px',
+                      flex: 1,
+                      resize: 'vertical',
+                      minHeight: '64px',
+                    }}
                     placeholder="Nhập danh sách bài hát cách nhau bởi dấu phẩy (VD: Bài 1, Bài 2, Bài 3)..."
                     value={musicSearchTerm || ''}
-                    onChange={(e) => onUpdateMusicSearchTerm(profile.id, e.target.value)}
+                    onChange={(e) =>
+                      onUpdateMusicSearchTerm(profile.id, e.target.value)
+                    }
                   />
                 </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                  Nếu để trống: Tự động dùng danh sách trong tab Yêu thích (Favorites) của kênh &amp; xoay vòng mỗi 10 video. Nếu nhập từ khóa: Tìm kiếm và chèn bài nhạc tương ứng (xoay vòng theo danh sách).
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--text-muted)',
+                    marginTop: '4px',
+                    display: 'block',
+                  }}
+                >
+                  Nếu để trống: Tự động dùng danh sách trong tab Yêu thích
+                  (Favorites) của kênh &amp; xoay vòng mỗi 10 video. Nếu nhập từ
+                  khóa: Tìm kiếm và chèn bài nhạc tương ứng (xoay vòng theo danh
+                  sách).
                 </span>
               </div>
 
               {/* Auto Increment Schedule */}
               <div style={{ marginBottom: '20px' }}>
-                <div style={{
-                  padding: '10px',
-                  borderRadius: '12px',
-                  background: 'var(--surface-2)',
-                  border: '1px solid var(--border)'
-                }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <div
+                  style={{
+                    padding: '10px',
+                    borderRadius: '12px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={profile.auto_increment_schedule === 1}
-                      onChange={(e) => onUpdateAutoIncrementSchedule(profile.id, e.target.checked)}
-                      style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                      onChange={(e) =>
+                        onUpdateAutoIncrementSchedule(
+                          profile.id,
+                          e.target.checked,
+                        )
+                      }
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        accentColor: 'var(--primary)',
+                        cursor: 'pointer',
+                      }}
                     />
                     <div className="toggle-body">
                       <span className="toggle-title">Lên lịch nối tiếp</span>
-                      <span className="toggle-desc">V1: Public, V2: Mặc định, V3+: +{(profile.schedule_interval || 5)} phút</span>
+                      <span className="toggle-desc">
+                        V1: Public, V2: Mặc định, V3+: +
+                        {profile.schedule_interval || 5} phút
+                      </span>
                     </div>
                   </label>
                 </div>
 
                 {profile.auto_increment_schedule === 1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--divider)', paddingLeft: '28px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>Khoảng cách:</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      marginTop: '10px',
+                      paddingTop: '8px',
+                      borderTop: '1px solid var(--divider)',
+                      paddingLeft: '28px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      Khoảng cách:
+                    </span>
                     {[5, 10, 15, 20].map((mins) => (
-                      <label key={mins} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                      <label
+                        key={mins}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                      >
                         <input
                           type="radio"
                           name={`schedule_interval_${profile.id}`}
                           value={mins}
                           checked={(profile.schedule_interval || 5) === mins}
-                          onChange={() => onUpdateScheduleInterval && onUpdateScheduleInterval(profile.id, mins)}
-                          style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
+                          onChange={() =>
+                            onUpdateScheduleInterval &&
+                            onUpdateScheduleInterval(profile.id, mins)
+                          }
+                          style={{
+                            accentColor: 'var(--primary)',
+                            cursor: 'pointer',
+                          }}
                         />
                         {mins} phút
                       </label>
@@ -197,7 +282,9 @@ const EditProfileModal = ({
                   <input
                     type="checkbox"
                     checked={profile.remove_title !== 0}
-                    onChange={(e) => onUpdateRemoveTitle(profile.id, e.target.checked)}
+                    onChange={(e) =>
+                      onUpdateRemoveTitle(profile.id, e.target.checked)
+                    }
                   />
                   <div className="toggle-body">
                     <span className="toggle-title">
@@ -205,7 +292,8 @@ const EditProfileModal = ({
                       Xóa tiêu đề khi upload
                     </span>
                     <span className="toggle-desc">
-                      Bật: tự động xóa tiêu đề mặc định khi đăng. Tắt: giữ tiêu đề gốc.
+                      Bật: tự động xóa tiêu đề mặc định khi đăng. Tắt: giữ tiêu
+                      đề gốc.
                     </span>
                   </div>
                 </label>
@@ -217,7 +305,9 @@ const EditProfileModal = ({
                   <input
                     type="checkbox"
                     checked={profile.set_music === 1}
-                    onChange={(e) => onUpdateSetMusic(profile.id, e.target.checked)}
+                    onChange={(e) =>
+                      onUpdateSetMusic(profile.id, e.target.checked)
+                    }
                   />
                   <div className="toggle-body">
                     <span className="toggle-title">
@@ -225,7 +315,9 @@ const EditProfileModal = ({
                       Set nhạc khi upload
                     </span>
                     <span className="toggle-desc">
-                      Bật: mở Edit video, tự động chọn nhạc từ tab Yêu thích (Favorites) &amp; xoay vòng mỗi 10 video một bài (chỉnh âm lượng -50).
+                      Bật: mở Edit video, tự động chọn nhạc từ tab Yêu thích
+                      (Favorites) &amp; xoay vòng mỗi 10 video một bài (chỉnh âm
+                      lượng -50).
                     </span>
                   </div>
                 </label>
@@ -237,7 +329,9 @@ const EditProfileModal = ({
                   <input
                     type="checkbox"
                     checked={profile.need_content_check === 1}
-                    onChange={(e) => onUpdateNeedContentCheck(profile.id, e.target.checked)}
+                    onChange={(e) =>
+                      onUpdateNeedContentCheck(profile.id, e.target.checked)
+                    }
                   />
                   <div className="toggle-body">
                     <span className="toggle-title">
@@ -245,7 +339,8 @@ const EditProfileModal = ({
                       Kiểm tra nội dung (Content Check)
                     </span>
                     <span className="toggle-desc">
-                      Bật: tự động kiểm tra bản quyền / nội dung bằng Content Check Lite. Tắt: bỏ qua kiểm tra (mặc định tắt).
+                      Bật: tự động kiểm tra bản quyền / nội dung bằng Content
+                      Check Lite. Tắt: bỏ qua kiểm tra (mặc định tắt).
                     </span>
                   </div>
                 </label>
@@ -253,27 +348,35 @@ const EditProfileModal = ({
             </div>
 
             {/* Footer with status */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border)',
-              flexShrink: 0
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: getStatusColor(profile.status)
-                }} />
-                <span style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '700',
-                  color: getStatusColor(profile.status),
-                  textTransform: 'uppercase'
-                }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '16px',
+                borderTop: '1px solid var(--border)',
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <div
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: getStatusColor(profile.status),
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    color: getStatusColor(profile.status),
+                    textTransform: 'uppercase',
+                  }}
+                >
                   {getStatusLabel(profile.status)}
                 </span>
               </div>

@@ -28,7 +28,6 @@ const App = () => {
         />
 
         <main className="content-area">
-
           {activeTab === 'profiles' ? (
             <ProfilesView {...ui} />
           ) : activeTab === 'groups' ? (

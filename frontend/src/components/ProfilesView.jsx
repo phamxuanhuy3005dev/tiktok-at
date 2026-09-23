@@ -1,12 +1,11 @@
-import React from 'react';
 import { Layout } from 'lucide-react';
-import ProfileCard from './ProfileCard';
+import BatchStatusBanner from './BatchStatusBanner';
+import CookieModal from './CookieModal';
 import CreateProfileModal from './CreateProfileModal';
 import EditProfileModal from './EditProfileModal';
-import CookieModal from './CookieModal';
-import BatchStatusBanner from './BatchStatusBanner';
-import ProfilesToolbar from './ProfilesToolbar';
+import ProfileCard from './ProfileCard';
 import ProfilesActionBar from './ProfilesActionBar';
+import ProfilesToolbar from './ProfilesToolbar';
 
 // The "Profiles Dashboard" tab: filters, bulk actions, profile card grid,
 // empty states and all profile-related modals (create, import, export, edit).
@@ -16,13 +15,8 @@ const ProfilesView = ({
   groups = [],
   groupFilter = 'all',
   setGroupFilter,
-  statusFilter = 'all',
-  setStatusFilter,
   searchQuery = '',
   setSearchQuery,
-  sortBy = 'created_desc',
-  setSortBy,
-  statusCounts = {},
   resetFilters,
   allFilteredSelected = false,
   toggleSelectAllFiltered,
@@ -102,13 +96,16 @@ const ProfilesView = ({
   updateProfileUploadCount,
   updateProfileRemoveTitle,
   updateProfileNeedContentCheck,
-  handleUpdateMusicSearchTerm
+  handleUpdateMusicSearchTerm,
 }) => {
   const hasSelection = (selectedForRun?.size || 0) > 0;
 
   return (
     <section>
-      <BatchStatusBanner batchStatus={batchStatus} onDismiss={dismissBatchStatus} />
+      <BatchStatusBanner
+        batchStatus={batchStatus}
+        onDismiss={dismissBatchStatus}
+      />
 
       <div className="page-header page-header--dash">
         <ProfilesToolbar
@@ -145,7 +142,9 @@ const ProfilesView = ({
             <div />
             <span>Profile</span>
             <span>Trạng thái</span>
-            <span style={{ textAlign: 'right', paddingRight: '8px' }}>Thao tác</span>
+            <span style={{ textAlign: 'right', paddingRight: '8px' }}>
+              Thao tác
+            </span>
             <div />
           </div>
           {filteredProfiles.map((profile) => (
@@ -184,7 +183,13 @@ const ProfilesView = ({
 
       {profiles.length > 0 && filteredProfiles.length === 0 && (
         <div className="empty-state empty-state--compact">
-          <p style={{ color: 'var(--text)', marginBottom: '8px', fontWeight: '600' }}>
+          <p
+            style={{
+              color: 'var(--text)',
+              marginBottom: '8px',
+              fontWeight: '600',
+            }}
+          >
             Không tìm thấy profile nào phù hợp với bộ lọc hiện tại
           </p>
           <p style={{ fontSize: '0.9rem', marginBottom: '12px' }}>
@@ -195,7 +200,11 @@ const ProfilesView = ({
               type="button"
               className="btn btn-secondary"
               onClick={resetFilters}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
             >
               <span>Đặt lại bộ lọc</span>
             </button>
@@ -246,7 +255,9 @@ const ProfilesView = ({
         onUpdateUploadCount={updateProfileUploadCount}
         onUpdateRemoveTitle={updateProfileRemoveTitle}
         onUpdateNeedContentCheck={updateProfileNeedContentCheck}
-        musicSearchTerm={editingProfileId ? (musicSearchTerms[editingProfileId] || '') : ''}
+        musicSearchTerm={
+          editingProfileId ? musicSearchTerms[editingProfileId] || '' : ''
+        }
         onUpdateMusicSearchTerm={handleUpdateMusicSearchTerm}
       />
 
@@ -254,7 +265,9 @@ const ProfilesView = ({
         open={Boolean(cookieModalProfileId)}
         onClose={closeCookieModal}
         profile={profiles.find((p) => p.id === cookieModalProfileId)}
-        isBrowserOpen={Boolean(profiles.find((p) => p.id === cookieModalProfileId)?.is_browser_open)}
+        isBrowserOpen={Boolean(
+          profiles.find((p) => p.id === cookieModalProfileId)?.is_browser_open,
+        )}
         onSaveCookies={handleSaveProfileCookies}
         onCaptureFromBrowser={handleCaptureCookiesFromBrowser}
         onLogout={handleLogoutProfile}

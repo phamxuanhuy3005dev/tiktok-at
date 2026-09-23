@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { showToast, toast } from '../utils/toast';
 
@@ -18,7 +18,7 @@ export const ToastContainer = ({ theme = 'dark' }) => (
         borderRadius: '12px',
         backdropFilter: 'blur(12px)',
         fontSize: '0.875rem',
-      }
+      },
     }}
   />
 );

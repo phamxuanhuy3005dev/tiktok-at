@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { db, PROFILES_DIR } from './db.js';
 import { manualBrowsers } from './services/tracker.js';
 import { releaseProfileLocks } from './services/browser-manager.js';
@@ -11,6 +12,9 @@ import configRouter from './routes/config.js';
 import systemRouter from './routes/system.js';
 import cookiesRouter from './routes/cookies.js';
 import automationRouter from './routes/automation.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,7 +41,9 @@ try {
   console.log('[System] Reset stuck profiles to idle state');
 
   // Checkpoint WAL to keep DB files small on disk
-  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (_) {}
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch (_) {}
 
   const allProfiles = db.prepare('SELECT name FROM profiles').all();
   for (const p of allProfiles) {
@@ -57,7 +63,9 @@ const gracefulShutdown = async (signal) => {
     } catch (e) {}
   }
   manualBrowsers.clear();
-  try { db.pragma('wal_checkpoint(TRUNCATE)'); } catch (_) {}
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch (_) {}
   process.exit(0);
 };
 
@@ -71,10 +79,6 @@ app.use('/api', configRouter);
 app.use('/api', systemRouter);
 app.use('/api', cookiesRouter);
 app.use('/api', automationRouter);
-
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -127,11 +131,12 @@ app.listen(PORT, () => {
   console.log(`[Server] TikTok Automation running at ${url}`);
 
   if (process.env.AUTO_OPEN === 'true') {
-    const cmd = process.platform === 'darwin'
-      ? `open ${url}`
-      : process.platform === 'win32'
-      ? `start ${url}`
-      : `xdg-open ${url}`;
+    const cmd =
+      process.platform === 'darwin'
+        ? `open ${url}`
+        : process.platform === 'win32'
+          ? `start ${url}`
+          : `xdg-open ${url}`;
     import('child_process').then(({ exec }) => {
       exec(cmd, () => {});
     });

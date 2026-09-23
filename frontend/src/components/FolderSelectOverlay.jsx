@@ -1,6 +1,5 @@
-import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FolderOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // Full-screen loading overlay shown while the native folder picker dialog is open.
 const FolderSelectOverlay = ({ visible }) => (
@@ -20,22 +19,66 @@ const FolderSelectOverlay = ({ visible }) => (
           justifyContent: 'center',
           zIndex: 1000,
           flexDirection: 'column',
-          gap: '20px'
+          gap: '20px',
         }}
       >
-        <div className="glass" style={{ padding: '40px', borderRadius: '24px', textAlign: 'center', border: '1px solid var(--primary)' }}>
-          <div style={{ position: 'relative', width: '80px', height: '80px', margin: '0 auto 24px' }}>
-            <div style={{ position: 'absolute', inset: 0, border: '4px solid rgba(255, 63, 182, 0.1)', borderRadius: '50%' }} />
+        <div
+          className="glass"
+          style={{
+            padding: '40px',
+            borderRadius: '24px',
+            textAlign: 'center',
+            border: '1px solid var(--primary)',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 24px',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                border: '4px solid rgba(255, 63, 182, 0.1)',
+                borderRadius: '50%',
+              }}
+            />
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-              style={{ position: 'absolute', inset: 0, border: '4px solid transparent', borderTopColor: 'var(--primary)', borderRadius: '50%' }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                border: '4px solid transparent',
+                borderTopColor: 'var(--primary)',
+                borderRadius: '50%',
+              }}
             />
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <FolderOpen size={32} color="var(--primary)" />
             </div>
           </div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '8px' }}>Đang chọn thư mục...</h3>
+          <h3
+            style={{
+              fontSize: '1.25rem',
+              fontWeight: '700',
+              marginBottom: '8px',
+            }}
+          >
+            Đang chọn thư mục...
+          </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Vui lòng chọn thư mục trên cửa sổ hệ thống vừa xuất hiện.
           </p>

@@ -18,6 +18,9 @@ uploads/
 */uploads/
 dummy_videos/
 trash/
+cookies.txt
+*/cookies.txt
+*.lock
 
 # Debug files & screenshots
 *.log

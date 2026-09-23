@@ -43,8 +43,11 @@ function writeCache(data) {
 // Chạy lệnh shell đồng bộ (tương thích tối đa Windows và Unix)
 function runCmd(command, args, cwd) {
   const isWin = process.platform === 'win32';
-  const cmdToRun = isWin && (command === 'npm' || command === 'npx') ? `${command}.cmd` : command;
-  
+  const cmdToRun =
+    isWin && (command === 'npm' || command === 'npx')
+      ? `${command}.cmd`
+      : command;
+
   let res = spawnSync(cmdToRun, args, {
     cwd,
     stdio: 'inherit',
@@ -66,7 +69,9 @@ function runCmd(command, args, cwd) {
     throw res.error;
   }
   if (res.status !== 0) {
-    throw new Error(`Lệnh "${command} ${args.join(' ')}" thất bại với mã lỗi ${res.status}`);
+    throw new Error(
+      `Lệnh "${command} ${args.join(' ')}" thất bại với mã lỗi ${res.status}`,
+    );
   }
 }
 
@@ -98,7 +103,7 @@ function getFilesRecursively(dir) {
 function calculateFrontendSourceHash() {
   const hash = crypto.createHash('sha256');
   const srcFiles = getFilesRecursively(path.join(FRONTEND_DIR, 'src'));
-  
+
   // Thêm các file cấu hình quan trọng
   const configFiles = [
     path.join(FRONTEND_DIR, 'index.html'),
@@ -106,7 +111,10 @@ function calculateFrontendSourceHash() {
     path.join(FRONTEND_DIR, 'package.json'),
   ];
 
-  const allFiles = [...srcFiles, ...configFiles.filter(f => fs.existsSync(f))].sort();
+  const allFiles = [
+    ...srcFiles,
+    ...configFiles.filter((f) => fs.existsSync(f)),
+  ].sort();
 
   for (const file of allFiles) {
     const relPath = path.relative(FRONTEND_DIR, file);
@@ -128,7 +136,8 @@ function checkPortInUse(port) {
       }
     }, 1000);
 
-    const tester = net.createServer()
+    const tester = net
+      .createServer()
       .once('error', (err) => {
         if (!resolved) {
           resolved = true;
@@ -162,11 +171,16 @@ async function freePortIfBusy(port) {
     const inUse = await checkPortInUse(port);
     if (!inUse) return;
 
-    console.log(`⚠️  [Cổng ${port}] Đang bị chiếm dụng bởi tiến trình khác. Đang tiến hành giải phóng...`);
+    console.log(
+      `⚠️  [Cổng ${port}] Đang bị chiếm dụng bởi tiến trình khác. Đang tiến hành giải phóng...`,
+    );
     if (process.platform === 'win32') {
       let output = '';
       try {
-        output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        output = execSync(`netstat -ano | findstr :${port}`, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
       } catch (_) {
         output = '';
       }
@@ -183,18 +197,23 @@ async function freePortIfBusy(port) {
         }
       }
     } else {
-      execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+      execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
+        stdio: 'ignore',
+      });
     }
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
     console.log(`✅ [Cổng ${port}] Đã giải phóng thành công!`);
   } catch (err) {
-    console.warn(`⚠️  Không thể tự động đóng tiến trình trên cổng ${port}: ${err.message}`);
+    console.warn(
+      `⚠️  Không thể tự động đóng tiến trình trên cổng ${port}: ${err.message}`,
+    );
   }
 }
 
 // Tiến trình chính
 async function main() {
-  const forceRebuild = process.argv.includes('--rebuild') || process.argv.includes('--build');
+  const forceRebuild =
+    process.argv.includes('--rebuild') || process.argv.includes('--build');
   const cache = readCache();
 
   console.log('=======================================================');
@@ -205,13 +224,18 @@ async function main() {
   // 1. Kiểm tra & Cài đặt thư viện Backend
   const backendPkgPath = path.join(BACKEND_DIR, 'package.json');
   const backendPkgHash = hashFile(backendPkgPath);
-  const backendExpressInstalled = fs.existsSync(path.join(BACKEND_DIR, 'node_modules', 'express'));
-  const needsBackendInstall = !backendExpressInstalled || cache.backendPkgHash !== backendPkgHash;
+  const backendExpressInstalled = fs.existsSync(
+    path.join(BACKEND_DIR, 'node_modules', 'express'),
+  );
+  const needsBackendInstall =
+    !backendExpressInstalled || cache.backendPkgHash !== backendPkgHash;
 
   if (needsBackendInstall) {
-    console.log('📦 [1/3] Đang chuẩn bị thư viện Backend (lần đầu hoặc có cập nhật)...');
+    console.log(
+      '📦 [1/3] Đang chuẩn bị thư viện Backend (lần đầu hoặc có cập nhật)...',
+    );
     runCmd('npm', ['install'], BACKEND_DIR);
-    
+
     console.log('🌐 [Playwright] Kiểm tra & chuẩn bị trình duyệt Chromium...');
     runCmd('npx', ['playwright', 'install', 'chromium'], BACKEND_DIR);
 
@@ -225,11 +249,16 @@ async function main() {
   // 2. Kiểm tra & Cài đặt thư viện Frontend
   const frontendPkgPath = path.join(FRONTEND_DIR, 'package.json');
   const frontendPkgHash = hashFile(frontendPkgPath);
-  const frontendViteInstalled = fs.existsSync(path.join(FRONTEND_DIR, 'node_modules', 'vite'));
-  const needsFrontendInstall = !frontendViteInstalled || cache.frontendPkgHash !== frontendPkgHash;
+  const frontendViteInstalled = fs.existsSync(
+    path.join(FRONTEND_DIR, 'node_modules', 'vite'),
+  );
+  const needsFrontendInstall =
+    !frontendViteInstalled || cache.frontendPkgHash !== frontendPkgHash;
 
   if (needsFrontendInstall) {
-    console.log('📦 [2/3] Đang chuẩn bị thư viện Frontend (lần đầu hoặc có cập nhật)...');
+    console.log(
+      '📦 [2/3] Đang chuẩn bị thư viện Frontend (lần đầu hoặc có cập nhật)...',
+    );
     runCmd('npm', ['install'], FRONTEND_DIR);
 
     cache.frontendPkgHash = frontendPkgHash;
@@ -248,11 +277,17 @@ async function main() {
 
   if (needsBuild) {
     if (distMissing) {
-      console.log('🔨 [3/3] Chưa có bản build giao diện (lần đầu clone), đang tiến hành biên dịch...');
+      console.log(
+        '🔨 [3/3] Chưa có bản build giao diện (lần đầu clone), đang tiến hành biên dịch...',
+      );
     } else if (codeChanged) {
-      console.log('🔨 [3/3] Phát hiện code mới nhất (sau khi cập nhật / git pull), đang tự động build lại...');
+      console.log(
+        '🔨 [3/3] Phát hiện code mới nhất (sau khi cập nhật / git pull), đang tự động build lại...',
+      );
     } else {
-      console.log('🔨 [3/3] Đang biên dịch lại giao diện Frontend theo yêu cầu...');
+      console.log(
+        '🔨 [3/3] Đang biên dịch lại giao diện Frontend theo yêu cầu...',
+      );
     }
 
     runCmd('npm', ['run', 'build'], FRONTEND_DIR);
@@ -271,8 +306,12 @@ async function main() {
   console.log('');
   console.log('=======================================================');
   console.log('🚀 [HỆ THỐNG] Đang khởi chạy TikTok Automation Server...');
-  console.log(`🌐 [HỆ THỐNG] Trình duyệt web sẽ tự động mở tại: http://localhost:${DEFAULT_PORT}`);
-  console.log('💡 Nhấn tổ hợp phím [Ctrl + C] tại cửa sổ này khi muốn dừng chương trình.');
+  console.log(
+    `🌐 [HỆ THỐNG] Trình duyệt web sẽ tự động mở tại: http://localhost:${DEFAULT_PORT}`,
+  );
+  console.log(
+    '💡 Nhấn tổ hợp phím [Ctrl + C] tại cửa sổ này khi muốn dừng chương trình.',
+  );
   console.log('=======================================================');
   console.log('');
 

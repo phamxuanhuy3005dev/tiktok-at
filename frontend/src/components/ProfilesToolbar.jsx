@@ -1,10 +1,5 @@
-import React, { useRef } from 'react';
-import {
-  Plus,
-  Trash2,
-  Cookie,
-  FileJson
-} from 'lucide-react';
+import { Cookie, FileJson, Plus, Trash2 } from 'lucide-react';
+import { useRef } from 'react';
 import IconActionButton from './IconActionButton';
 
 const ProfilesToolbar = ({
@@ -14,7 +9,7 @@ const ProfilesToolbar = ({
   handleImportCookiesJson,
   clearTrash,
   displayedCount = 0,
-  totalProfiles = 0
+  totalProfiles = 0,
 }) => {
   const cookieFileInputRef = useRef(null);
 
@@ -29,15 +24,26 @@ const ProfilesToolbar = ({
   return (
     <div className="dash-top">
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <h2 className="page-title" style={{ margin: 0 }}>Quản lý Profile</h2>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <h2 className="page-title" style={{ margin: 0 }}>
+            Quản lý Profile
+          </h2>
           <span className="badge-profile-counter">
             {displayedCount !== totalProfiles
               ? `Hiển thị ${displayedCount} / ${totalProfiles} profile`
               : `${totalProfiles} profile`}
           </span>
         </div>
-        <p className="page-subtitle" style={{ marginTop: '4px' }}>Quản lý và tự động hóa các kênh TikTok</p>
+        <p className="page-subtitle" style={{ marginTop: '4px' }}>
+          Quản lý và tự động hóa các kênh TikTok
+        </p>
       </div>
       <div className="dash-tools">
         <button

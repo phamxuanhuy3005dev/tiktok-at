@@ -1,7 +1,10 @@
-import { useState, useCallback } from 'react';
 import axios from 'axios';
+import { useCallback, useState } from 'react';
 
-export const useFolderPicker = ({ updateProfileFolder, setNewProfileVideoFolder } = {}) => {
+export const useFolderPicker = ({
+  updateProfileFolder,
+  setNewProfileVideoFolder,
+} = {}) => {
   const [isSelectingFolder, setIsSelectingFolder] = useState(false);
 
   const selectFolderPath = useCallback(async () => {
@@ -14,17 +17,20 @@ export const useFolderPicker = ({ updateProfileFolder, setNewProfileVideoFolder 
     }
   }, []);
 
-  const handleSelectFolder = useCallback(async (id) => {
-    setIsSelectingFolder(true);
-    try {
-      const selectedPath = await selectFolderPath();
-      if (selectedPath && typeof updateProfileFolder === 'function') {
-        await updateProfileFolder(id, selectedPath);
+  const handleSelectFolder = useCallback(
+    async (id) => {
+      setIsSelectingFolder(true);
+      try {
+        const selectedPath = await selectFolderPath();
+        if (selectedPath && typeof updateProfileFolder === 'function') {
+          await updateProfileFolder(id, selectedPath);
+        }
+      } finally {
+        setIsSelectingFolder(false);
       }
-    } finally {
-      setIsSelectingFolder(false);
-    }
-  }, [selectFolderPath, updateProfileFolder]);
+    },
+    [selectFolderPath, updateProfileFolder],
+  );
 
   const handleSelectFolderForCreateProfile = useCallback(async () => {
     setIsSelectingFolder(true);
@@ -38,17 +44,20 @@ export const useFolderPicker = ({ updateProfileFolder, setNewProfileVideoFolder 
     }
   }, [selectFolderPath, setNewProfileVideoFolder]);
 
-  const handleSelectFolderForConfig = useCallback(async (onSelect) => {
-    setIsSelectingFolder(true);
-    try {
-      const selectedPath = await selectFolderPath();
-      if (selectedPath && typeof onSelect === 'function') {
-        onSelect(selectedPath);
+  const handleSelectFolderForConfig = useCallback(
+    async (onSelect) => {
+      setIsSelectingFolder(true);
+      try {
+        const selectedPath = await selectFolderPath();
+        if (selectedPath && typeof onSelect === 'function') {
+          onSelect(selectedPath);
+        }
+      } finally {
+        setIsSelectingFolder(false);
       }
-    } finally {
-      setIsSelectingFolder(false);
-    }
-  }, [selectFolderPath]);
+    },
+    [selectFolderPath],
+  );
 
   return {
     isSelectingFolder,
@@ -56,7 +65,7 @@ export const useFolderPicker = ({ updateProfileFolder, setNewProfileVideoFolder 
     selectFolderPath,
     handleSelectFolder,
     handleSelectFolderForCreateProfile,
-    handleSelectFolderForConfig
+    handleSelectFolderForConfig,
   };
 };
 

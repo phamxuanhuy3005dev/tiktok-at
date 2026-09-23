@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // Theme management for the TikTok Manager UI.
 // Supports 'dark' (default) and 'light'. The active theme is applied to
@@ -15,7 +15,9 @@ const getInitialTheme = () => {
     // localStorage unavailable — ignore and fall through
   }
   if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    return window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
   }
   return 'dark';
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /**
  * Manages profile selection for bulk operations.
@@ -48,7 +48,7 @@ export const useProfileSelection = (profiles = [], filteredProfiles = []) => {
     setSelectedForRun,
     toggleProfileSelectedForRun,
     allFilteredSelected,
-    toggleSelectAllFiltered
+    toggleSelectAllFiltered,
   };
 };
 

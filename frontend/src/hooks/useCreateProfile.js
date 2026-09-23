@@ -1,19 +1,27 @@
-import { useState, useCallback } from 'react';
 import axios from 'axios';
+import { useCallback, useState } from 'react';
 
-export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = {}) => {
-  const [isCreateProfileModalOpen, setIsCreateProfileModalOpen] = useState(false);
+export const useCreateProfile = ({
+  fetchData,
+  setMessage,
+  isSelectingFolder,
+} = {}) => {
+  const [isCreateProfileModalOpen, setIsCreateProfileModalOpen] =
+    useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
 
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfileGroupId, setNewProfileGroupId] = useState('');
   const [newProfileVideoFolder, setNewProfileVideoFolder] = useState('');
   const [newProfileMusicSearch, setNewProfileMusicSearch] = useState('');
-  const [newProfileAutoIncrementSchedule, setNewProfileAutoIncrementSchedule] = useState(true);
-  const [newProfileScheduleInterval, setNewProfileScheduleInterval] = useState(10);
+  const [newProfileAutoIncrementSchedule, setNewProfileAutoIncrementSchedule] =
+    useState(true);
+  const [newProfileScheduleInterval, setNewProfileScheduleInterval] =
+    useState(10);
   const [newProfileRemoveTitle, setNewProfileRemoveTitle] = useState(true);
   const [newProfileSetMusic, setNewProfileSetMusic] = useState(true);
-  const [newProfileNeedContentCheck, setNewProfileNeedContentCheck] = useState(false);
+  const [newProfileNeedContentCheck, setNewProfileNeedContentCheck] =
+    useState(false);
 
   const resetCreateProfileForm = useCallback(() => {
     setNewProfileName('');
@@ -27,11 +35,14 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     setNewProfileNeedContentCheck(false);
   }, []);
 
-  const closeCreateProfileModal = useCallback(({ force } = {}) => {
-    if ((isCreatingProfile || isSelectingFolder) && !force) return;
-    setIsCreateProfileModalOpen(false);
-    resetCreateProfileForm();
-  }, [isCreatingProfile, isSelectingFolder, resetCreateProfileForm]);
+  const closeCreateProfileModal = useCallback(
+    ({ force } = {}) => {
+      if ((isCreatingProfile || isSelectingFolder) && !force) return;
+      setIsCreateProfileModalOpen(false);
+      resetCreateProfileForm();
+    },
+    [isCreatingProfile, isSelectingFolder, resetCreateProfileForm],
+  );
 
   const addProfile = useCallback(async () => {
     if (isCreatingProfile) return;
@@ -49,7 +60,7 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
         schedule_interval: newProfileScheduleInterval || 10,
         remove_title: newProfileRemoveTitle ? 1 : 0,
         set_music: newProfileSetMusic ? 1 : 0,
-        need_content_check: newProfileNeedContentCheck ? 1 : 0
+        need_content_check: newProfileNeedContentCheck ? 1 : 0,
       });
       closeCreateProfileModal({ force: true });
       if (typeof fetchData === 'function') {
@@ -60,7 +71,10 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
       }
     } catch (err) {
       if (typeof setMessage === 'function') {
-        setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể tạo profile' });
+        setMessage({
+          type: 'error',
+          text: err.response?.data?.error || 'Không thể tạo profile',
+        });
       }
     } finally {
       setIsCreatingProfile(false);
@@ -78,7 +92,7 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     newProfileNeedContentCheck,
     closeCreateProfileModal,
     fetchData,
-    setMessage
+    setMessage,
   ]);
 
   return {
@@ -105,7 +119,7 @@ export const useCreateProfile = ({ fetchData, setMessage, isSelectingFolder } = 
     setNewProfileNeedContentCheck,
     resetCreateProfileForm,
     closeCreateProfileModal,
-    addProfile
+    addProfile,
   };
 };
 

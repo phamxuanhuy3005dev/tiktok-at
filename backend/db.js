@@ -21,9 +21,11 @@ export const DUMMY_VIDEOS_DIR = path.join(BASE_DIR, 'dummy_videos');
 
 // Ensure directories exist
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
-if (!fs.existsSync(PROFILES_DIR)) fs.mkdirSync(PROFILES_DIR, { recursive: true });
+if (!fs.existsSync(PROFILES_DIR))
+  fs.mkdirSync(PROFILES_DIR, { recursive: true });
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-if (!fs.existsSync(DUMMY_VIDEOS_DIR)) fs.mkdirSync(DUMMY_VIDEOS_DIR, { recursive: true });
+if (!fs.existsSync(DUMMY_VIDEOS_DIR))
+  fs.mkdirSync(DUMMY_VIDEOS_DIR, { recursive: true });
 
 // Init SQLite DB
 export const db = new Database(DB_PATH);
@@ -63,93 +65,102 @@ db.exec(`
         key TEXT PRIMARY KEY,
         value TEXT
     );
-    CREATE TABLE IF NOT EXISTS profile_schedules (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        profile_id TEXT,
-        time TEXT,
-        FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-    );
 `);
 
 // Safe migration: ensure account_id, pass, email, pass_email exist
 const credCols = ['account_id', 'pass', 'email', 'pass_email'];
 try {
-    const tableInfo = db.prepare("PRAGMA table_info(profiles)").all();
-    const existingCols = new Set(tableInfo.map(c => c.name));
-    for (const col of credCols) {
-        if (!existingCols.has(col)) {
-            try {
-                db.exec(`ALTER TABLE profiles ADD COLUMN ${col} TEXT;`);
-                console.log(`Added column ${col} to profiles table`);
-            } catch (e) {
-                console.error(`Error adding column ${col}:`, e.message);
-            }
-        }
+  const tableInfo = db.prepare('PRAGMA table_info(profiles)').all();
+  const existingCols = new Set(tableInfo.map((c) => c.name));
+  for (const col of credCols) {
+    if (!existingCols.has(col)) {
+      try {
+        db.exec(`ALTER TABLE profiles ADD COLUMN ${col} TEXT;`);
+        console.log(`Added column ${col} to profiles table`);
+      } catch (e) {
+        console.error(`Error adding column ${col}:`, e.message);
+      }
     }
+  }
 
-    // Drop only unused legacy columns (proxy, render, avatar, fingerprint)
-    const unusedCols = [
-        'proxy', 'use_proxy', 'needs_render', 'render_concat_video',
-        'render_video_long', 'avatar_image', 'fingerprint', 'use_fingerprint'
-    ];
-    for (const col of unusedCols) {
-        if (existingCols.has(col)) {
-            try {
-                db.exec('ALTER TABLE profiles DROP COLUMN ' + col + ';');
-                console.log('Cleaned up unused column:', col);
-            } catch (e) {
-                console.error('Error dropping column ' + col + ':', e.message);
-            }
-        }
+  // Drop only unused legacy columns (proxy, render, avatar, fingerprint)
+  const unusedCols = [
+    'proxy',
+    'use_proxy',
+    'needs_render',
+    'render_concat_video',
+    'render_video_long',
+    'avatar_image',
+    'fingerprint',
+    'use_fingerprint',
+  ];
+  for (const col of unusedCols) {
+    if (existingCols.has(col)) {
+      try {
+        db.exec('ALTER TABLE profiles DROP COLUMN ' + col + ';');
+        console.log('Cleaned up unused column:', col);
+      } catch (e) {
+        console.error('Error dropping column ' + col + ':', e.message);
+      }
     }
+  }
+
+  // Drop obsolete profile_schedules table if it exists
+  db.exec('DROP TABLE IF EXISTS profile_schedules;');
 } catch (err) {
-    console.error('Migration error:', err);
+  console.error('Migration error:', err);
 }
 
 initGroupSchema(db);
 
 // Ensure database indexes exist for fast lookups & polling
 try {
-    db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_profile_schedules_profile_id ON profile_schedules(profile_id);
+  db.exec(`
         CREATE INDEX IF NOT EXISTS idx_profiles_group_id ON profiles(group_id);
         CREATE INDEX IF NOT EXISTS idx_profiles_status ON profiles(status);
         CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
     `);
 } catch (err) {
-    console.error('Index creation error:', err);
+  console.error('Index creation error:', err);
 }
 
 // Migration from db.json
 if (fs.existsSync(OLD_DB_PATH)) {
-    try {
-        const oldData = JSON.parse(fs.readFileSync(OLD_DB_PATH, 'utf-8'));
-        if (oldData.profiles) {
-            const insertProfile = db.prepare('INSERT OR IGNORE INTO profiles (id, name, status) VALUES (?, ?, ?)');
-            for (const p of oldData.profiles) {
-                insertProfile.run(p.id, p.name, p.status || 'idle');
-            }
-        }
-        if (oldData.config) {
-            const insertConfig = db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)');
-            Object.entries(oldData.config).forEach(([k, v]) => {
-                insertConfig.run(k, String(v));
-            });
-        }
-        // Rename old DB to avoid repeat migration
-        fs.renameSync(OLD_DB_PATH, OLD_DB_PATH + '.bak');
-        console.log('Migrated data from db.json to SQLite');
-    } catch (err) {
-        console.error('Migration error:', err);
+  try {
+    const oldData = JSON.parse(fs.readFileSync(OLD_DB_PATH, 'utf-8'));
+    if (oldData.profiles) {
+      const insertProfile = db.prepare(
+        'INSERT OR IGNORE INTO profiles (id, name, status) VALUES (?, ?, ?)',
+      );
+      for (const p of oldData.profiles) {
+        insertProfile.run(p.id, p.name, p.status || 'idle');
+      }
     }
+    if (oldData.config) {
+      const insertConfig = db.prepare(
+        'INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+      );
+      Object.entries(oldData.config).forEach(([k, v]) => {
+        insertConfig.run(k, String(v));
+      });
+    }
+    // Rename old DB to avoid repeat migration
+    fs.renameSync(OLD_DB_PATH, OLD_DB_PATH + '.bak');
+    console.log('Migrated data from db.json to SQLite');
+  } catch (err) {
+    console.error('Migration error:', err);
+  }
 }
 
 // Config helpers
 export const getConfig = (key, defaultValue) => {
-    const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key);
-    return row ? row.value : defaultValue;
+  const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key);
+  return row ? row.value : defaultValue;
 };
 
 export const setConfig = (key, value) => {
-    db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(key, String(value));
+  db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(
+    key,
+    String(value),
+  );
 };

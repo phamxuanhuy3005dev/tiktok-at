@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  X,
-  Copy,
   Check,
+  Copy,
   Download,
-  Upload,
-  RefreshCw,
+  FileCode,
   LogOut,
-  ShieldCheck,
+  RefreshCw,
   ShieldAlert,
-  FileCode
+  ShieldCheck,
+  Upload,
+  X,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const CookieModal = ({
   open,
@@ -20,7 +20,7 @@ const CookieModal = ({
   onSaveCookies,
   onCaptureFromBrowser,
   onLogout,
-  isBrowserOpen = false
+  isBrowserOpen = false,
 }) => {
   const [cookieText, setCookieText] = useState('');
   const [copied, setCopied] = useState(false);
@@ -47,16 +47,17 @@ const CookieModal = ({
       // If cookies in profile state are empty, try auto-fetching from live browser or disk!
       if (!raw || !raw.trim()) {
         if (typeof onCaptureFromBrowser === 'function') {
-          onCaptureFromBrowser(profile.id).then((res) => {
-            if (res?.cookies) {
-              setCookieText(JSON.stringify(res.cookies, null, 2));
-            }
-          }).catch(() => null);
+          onCaptureFromBrowser(profile.id)
+            .then((res) => {
+              if (res?.cookies) {
+                setCookieText(JSON.stringify(res.cookies, null, 2));
+              }
+            })
+            .catch(() => null);
         }
       }
     }
   }, [open, profile, onCaptureFromBrowser]);
-
 
   if (!profile) return null;
 
@@ -71,14 +72,20 @@ const CookieModal = ({
       if (raw.startsWith('[') || raw.startsWith('{')) {
         parsed = JSON.parse(raw);
       } else {
-        parsed = raw.split(';').map((s) => s.trim()).filter(Boolean);
+        parsed = raw
+          .split(';')
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
       if (Array.isArray(parsed)) {
         cookieCount = parsed.length;
         hasSession = parsed.some((c) =>
           typeof c === 'object'
-            ? c.name === 'sessionid' || c.name === 'sessionid_ss' || c.name === 'sid_tt'
-            : String(c).startsWith('sessionid=') || String(c).startsWith('sessionid_ss=')
+            ? c.name === 'sessionid' ||
+              c.name === 'sessionid_ss' ||
+              c.name === 'sid_tt'
+            : String(c).startsWith('sessionid=') ||
+              String(c).startsWith('sessionid_ss='),
         );
       }
     } catch (e) {}
@@ -98,7 +105,9 @@ const CookieModal = ({
   const handleDownload = () => {
     if (!cookieText) return;
     try {
-      const blob = new Blob([cookieText], { type: 'application/json;charset=utf-8' });
+      const blob = new Blob([cookieText], {
+        type: 'application/json;charset=utf-8',
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const safeName = profile.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
@@ -139,7 +148,10 @@ const CookieModal = ({
       setStatusMsg({ type: 'success', text: 'Đã lưu cookie thành công!' });
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err) {
-      setStatusMsg({ type: 'error', text: err.response?.data?.error || 'Lỗi khi lưu cookie' });
+      setStatusMsg({
+        type: 'error',
+        text: err.response?.data?.error || 'Lỗi khi lưu cookie',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -150,19 +162,30 @@ const CookieModal = ({
     setStatusMsg(null);
     try {
       const res = await onCaptureFromBrowser(profile.id);
-      setStatusMsg({ type: 'success', text: res?.message || 'Đã lấy cookie từ trình duyệt thành công!' });
+      setStatusMsg({
+        type: 'success',
+        text: res?.message || 'Đã lấy cookie từ trình duyệt thành công!',
+      });
       if (res?.cookies) {
         setCookieText(JSON.stringify(res.cookies, null, 2));
       }
     } catch (err) {
-      setStatusMsg({ type: 'error', text: err.response?.data?.error || 'Không lấy được cookie từ trình duyệt' });
+      setStatusMsg({
+        type: 'error',
+        text:
+          err.response?.data?.error || 'Không lấy được cookie từ trình duyệt',
+      });
     } finally {
       setIsCapturing(false);
     }
   };
 
   const handleLogoutClick = async () => {
-    if (!window.confirm(`Bạn có chắc chắn muốn đăng xuất tài khoản [${profile.name}]? Toàn bộ cookie và session của profile này sẽ bị xóa.`)) {
+    if (
+      !window.confirm(
+        `Bạn có chắc chắn muốn đăng xuất tài khoản [${profile.name}]? Toàn bộ cookie và session của profile này sẽ bị xóa.`,
+      )
+    ) {
       return;
     }
     setIsLoggingOut(true);
@@ -175,7 +198,10 @@ const CookieModal = ({
         onClose();
       }, 1200);
     } catch (err) {
-      setStatusMsg({ type: 'error', text: err.response?.data?.error || 'Lỗi khi đăng xuất' });
+      setStatusMsg({
+        type: 'error',
+        text: err.response?.data?.error || 'Lỗi khi đăng xuất',
+      });
     } finally {
       setIsLoggingOut(false);
     }
@@ -202,9 +228,13 @@ const CookieModal = ({
             {/* Header */}
             <div className="modal-header">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
                   <FileCode size={20} color="var(--primary)" />
-                  <h3 className="modal-title">Quản lý Cookie & Phiên Đăng nhập</h3>
+                  <h3 className="modal-title">
+                    Quản lý Cookie & Phiên Đăng nhập
+                  </h3>
                 </div>
                 <p className="modal-subtitle">
                   Kênh: <b>{profile.name}</b>
@@ -220,7 +250,10 @@ const CookieModal = ({
               </button>
             </div>
 
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div
+              className="modal-body"
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
               {/* Status Banner */}
               <div
                 style={{
@@ -229,25 +262,42 @@ const CookieModal = ({
                   justifyContent: 'space-between',
                   padding: '10px 14px',
                   borderRadius: '10px',
-                  background: hasSession ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
-                  border: hasSession ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)'
+                  background: hasSession
+                    ? 'rgba(16, 185, 129, 0.08)'
+                    : 'rgba(245, 158, 11, 0.08)',
+                  border: hasSession
+                    ? '1px solid rgba(16, 185, 129, 0.25)'
+                    : '1px solid rgba(245, 158, 11, 0.25)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
                   {hasSession ? (
                     <ShieldCheck size={18} color="#10b981" />
                   ) : (
                     <ShieldAlert size={18} color="#f59e0b" />
                   )}
                   <div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: hasSession ? '#10b981' : '#f59e0b' }}>
+                    <span
+                      style={{
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        color: hasSession ? '#10b981' : '#f59e0b',
+                      }}
+                    >
                       {hasSession
                         ? `Đã đăng nhập (Có sessionid • ${cookieCount} cookies)`
                         : cookieCount > 0
-                        ? `Có ${cookieCount} cookies (Chưa thấy sessionid)`
-                        : 'Chưa có Cookie (Chưa đăng nhập)'}
+                          ? `Có ${cookieCount} cookies (Chưa thấy sessionid)`
+                          : 'Chưa có Cookie (Chưa đăng nhập)'}
                     </span>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    <div
+                      style={{
+                        fontSize: '0.72rem',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
                       {hasSession
                         ? 'Phiên đăng nhập sẵn sàng để auto-upload và mở trình duyệt.'
                         : 'Dán Cookie JSON hoặc mở Chrome đăng nhập để tự động lưu session.'}
@@ -260,24 +310,50 @@ const CookieModal = ({
                   onClick={handleCapture}
                   disabled={isCapturing}
                   className="btn btn-secondary"
-                  style={{ fontSize: '0.75rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '6px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                   title="Lấy cookie mới nhất từ Chrome hoặc thư mục lưu trữ profile"
                 >
-                  <RefreshCw size={12} className={isCapturing ? 'animate-spin' : ''} />
+                  <RefreshCw
+                    size={12}
+                    className={isCapturing ? 'animate-spin' : ''}
+                  />
                   {isBrowserOpen ? 'Lấy từ Chrome' : 'Đồng bộ từ Profile'}
                 </button>
               </div>
 
               {/* Action Toolbar */}
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={handleCopy}
                   disabled={!cookieText}
-                  style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '6px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                 >
-                  {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                  {copied ? (
+                    <Check size={14} color="#10b981" />
+                  ) : (
+                    <Copy size={14} />
+                  )}
                   {copied ? 'Đã chép vào Clipboard!' : 'Sao chép Cookie'}
                 </button>
 
@@ -286,7 +362,13 @@ const CookieModal = ({
                   className="btn btn-secondary"
                   onClick={handleDownload}
                   disabled={!cookieText}
-                  style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '6px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                 >
                   <Download size={14} />
                   Tải file JSON
@@ -294,7 +376,15 @@ const CookieModal = ({
 
                 <label
                   className="btn btn-secondary"
-                  style={{ fontSize: '0.75rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0 }}
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '6px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    margin: 0,
+                  }}
                 >
                   <Upload size={14} />
                   Nhập file JSON...
@@ -308,8 +398,16 @@ const CookieModal = ({
               </div>
 
               {/* Cookie Editor Textarea */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
+              >
+                <label
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    color: 'var(--text-muted)',
+                  }}
+                >
                   Dữ liệu Cookie (Định dạng JSON mảng hoặc chuỗi name=value;):
                 </label>
                 <textarea
@@ -324,7 +422,7 @@ const CookieModal = ({
                     resize: 'vertical',
                     minHeight: '160px',
                     whiteSpace: 'pre',
-                    background: 'rgba(0, 0, 0, 0.25)'
+                    background: 'rgba(0, 0, 0, 0.25)',
                   }}
                   placeholder="Dán mảng Cookie JSON ([{ name, value, domain, path, ... }]) hoặc chuỗi cookie tại đây..."
                   value={cookieText}
@@ -340,8 +438,11 @@ const CookieModal = ({
                     borderRadius: '8px',
                     fontSize: '0.75rem',
                     color: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
-                    background: statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                    background:
+                      statusMsg.type === 'success'
+                        ? 'rgba(16, 185, 129, 0.1)'
+                        : 'rgba(239, 68, 68, 0.1)',
+                    border: `1px solid ${statusMsg.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
                   }}
                 >
                   {statusMsg.text}
@@ -356,7 +457,7 @@ const CookieModal = ({
                   alignItems: 'center',
                   marginTop: '8px',
                   paddingTop: '12px',
-                  borderTop: '1px solid var(--border)'
+                  borderTop: '1px solid var(--border)',
                 }}
               >
                 <div>
@@ -374,17 +475,23 @@ const CookieModal = ({
                         border: '1px solid rgba(239, 68, 68, 0.3)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
                       }}
                     >
                       <LogOut size={13} />
-                      {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất / Xóa Session'}
+                      {isLoggingOut
+                        ? 'Đang đăng xuất...'
+                        : 'Đăng xuất / Xóa Session'}
                     </button>
                   )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button type="button" className="btn btn-secondary" onClick={onClose}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={onClose}
+                  >
                     Đóng
                   </button>
                   <button

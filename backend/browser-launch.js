@@ -2,29 +2,38 @@
 // Optimized for low-end and older hardware while preserving full TikTok Studio functionality (WebGL, Audio, Canvas).
 
 export const PERFORMANCE_CHROME_ARGS = [
-    '--disable-blink-features=AutomationControlled',
-    // Memory and disk cache limits for low RAM/disk machines
-    '--js-flags=--max-old-space-size=512',
-    '--disk-cache-size=33554432',
-    '--media-cache-size=33554432',
-    // Disable unnecessary background processes and network requests
-    '--disable-background-networking',
-    '--disable-component-update',
-    '--disable-domain-reliability',
-    '--disable-sync',
-    '--disable-client-side-phishing-detection',
-    '--disable-default-apps',
-    '--disable-hang-monitor',
-    '--disable-popup-blocking',
-    '--disable-prompt-on-repost',
-    // Disable metrics and crash reporting
-    '--metrics-recording-only',
-    '--disable-breakpad',
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--password-store=basic',
-    // Disable heavy unneeded features (retains WebGL/HW accel for video editor)
-    '--disable-features=Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion,InterestFeedContentSuggestions'
+  '--disable-blink-features=AutomationControlled',
+  // Memory and disk cache limits for low RAM/disk machines
+  '--js-flags=--max-old-space-size=512',
+  '--disk-cache-size=33554432',
+  '--media-cache-size=33554432',
+  // Limit renderer process count to save RAM on low-spec hardware
+  '--renderer-process-limit=3',
+  '--disable-dev-shm-usage',
+  // Prevent background throttling during automated uploads
+  '--disable-background-timer-throttling',
+  '--disable-renderer-backgrounding',
+  '--disable-ipc-flooding-protection',
+  // Disable unnecessary background processes and network requests
+  '--disable-background-networking',
+  '--disable-component-update',
+  '--disable-domain-reliability',
+  '--disable-sync',
+  '--disable-client-side-phishing-detection',
+  '--disable-default-apps',
+  '--disable-hang-monitor',
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--no-pings',
+  '--disable-field-trial-config',
+  // Disable metrics and crash reporting
+  '--metrics-recording-only',
+  '--disable-breakpad',
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--password-store=basic',
+  // Disable heavy unneeded features (retains WebGL/HW accel for video editor)
+  '--disable-features=Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion,InterestFeedContentSuggestions',
 ];
 
 /**
@@ -35,16 +44,15 @@ export const PERFORMANCE_CHROME_ARGS = [
  * @param {string[]}    [opts.extraArgs] additional Chrome args (e.g. --window-size)
  * @param {object}      [opts.viewport]  Playwright viewport option
  */
-export function buildBrowserLaunchOptions(profile, { extraArgs = [], viewport } = {}) {
-    const options = {
-        headless: false,
-        args: [
-            ...PERFORMANCE_CHROME_ARGS,
-            ...extraArgs
-        ]
-    };
-    if (viewport) options.viewport = viewport;
+export function buildBrowserLaunchOptions(
+  profile,
+  { extraArgs = [], viewport } = {},
+) {
+  const options = {
+    headless: false,
+    args: [...PERFORMANCE_CHROME_ARGS, ...extraArgs],
+  };
+  if (viewport) options.viewport = viewport;
 
-    return options;
+  return options;
 }
-

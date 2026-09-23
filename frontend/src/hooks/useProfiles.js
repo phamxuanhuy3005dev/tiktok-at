@@ -1,10 +1,10 @@
+import { useAutomationActions } from './useAutomationActions';
+import { useCookieActions } from './useCookieActions';
+import { useCreateProfile } from './useCreateProfile';
+import { useEditProfile } from './useEditProfile';
+import { useFolderPicker } from './useFolderPicker';
 import { useProfileData } from './useProfileData';
 import { useProfileSelection } from './useProfileSelection';
-import { useCreateProfile } from './useCreateProfile';
-import { useCookieActions } from './useCookieActions';
-import { useAutomationActions } from './useAutomationActions';
-import { useFolderPicker } from './useFolderPicker';
-import { useEditProfile } from './useEditProfile';
 
 /**
  * Encapsulates core state and API handlers for the TikTok Manager dashboard.
@@ -23,16 +23,8 @@ const useProfiles = () => {
     isLoading,
     batchStatus,
     groupFilter,
-    statusFilter,
-    setStatusFilter,
     searchQuery,
     setSearchQuery,
-    sortBy,
-    setSortBy,
-    groupSortBy,
-    setGroupSortBy,
-    sortedGroups,
-    statusCounts,
     resetFilters,
     updateGroup,
     editingId,
@@ -67,7 +59,7 @@ const useProfiles = () => {
     updateProfileUploadCount,
     clearDebugFiles,
     getStatusColor,
-    dismissBatchStatus
+    dismissBatchStatus,
   } = profileData;
 
   // 2. Selection
@@ -76,7 +68,7 @@ const useProfiles = () => {
     selectedForRun,
     toggleProfileSelectedForRun,
     allFilteredSelected,
-    toggleSelectAllFiltered
+    toggleSelectAllFiltered,
   } = selection;
 
   // 3. Automation actions
@@ -85,7 +77,7 @@ const useProfiles = () => {
     selectedForRun,
     setIsLoading: profileData.setIsLoading,
     setMessage,
-    fetchData: profileData.fetchData
+    fetchData: profileData.fetchData,
   });
   const {
     loggingInProfiles,
@@ -102,7 +94,7 @@ const useProfiles = () => {
     stopLoginTikTok,
     startBulkLogin,
     handleAddFavoriteMusic,
-    handleUpdateMusicSearchTerm
+    handleUpdateMusicSearchTerm,
   } = automation;
 
   // Sync profile automation status when data updates
@@ -110,7 +102,10 @@ const useProfiles = () => {
 
   // Wrapped actions passing current selectedForRun explicitly
   const handleDeleteSelectedProfiles = (ids) => {
-    return profileData.deleteSelectedProfiles(ids || selectedForRun, selection.setSelectedForRun);
+    return profileData.deleteSelectedProfiles(
+      ids || selectedForRun,
+      selection.setSelectedForRun,
+    );
   };
 
   const handleClearTrash = (ids) => {
@@ -120,13 +115,14 @@ const useProfiles = () => {
   // 4. Folder selection dialogs
   const folderPicker = useFolderPicker({
     updateProfileFolder,
-    setNewProfileVideoFolder: (path) => createProfile.setNewProfileVideoFolder(path)
+    setNewProfileVideoFolder: (path) =>
+      createProfile.setNewProfileVideoFolder(path),
   });
   const {
     isSelectingFolder,
     handleSelectFolder,
     handleSelectFolderForCreateProfile,
-    handleSelectFolderForConfig
+    handleSelectFolderForConfig,
   } = folderPicker;
 
   const handleSelectFolderForDefaultConfig = () => {
@@ -141,7 +137,7 @@ const useProfiles = () => {
   const createProfile = useCreateProfile({
     fetchData,
     setMessage,
-    isSelectingFolder
+    isSelectingFolder,
   });
   const {
     isCreateProfileModalOpen,
@@ -166,14 +162,14 @@ const useProfiles = () => {
     newProfileNeedContentCheck,
     setNewProfileNeedContentCheck,
     closeCreateProfileModal,
-    addProfile
+    addProfile,
   } = createProfile;
 
   // 6. Cookies actions & JSON import/export
   const cookieActions = useCookieActions({
     fetchData,
     setMessage,
-    selectedForRun
+    selectedForRun,
   });
   const {
     cookieModalProfileId,
@@ -183,19 +179,19 @@ const useProfiles = () => {
     handleCaptureCookiesFromBrowser,
     handleLogoutProfile,
     handleExportCookiesJson,
-    handleImportCookiesJson
+    handleImportCookiesJson,
   } = cookieActions;
 
   // 7. Edit Profile Modal
   const editProfile = useEditProfile({
     profiles,
-    setMusicSearchTerms
+    setMusicSearchTerms,
   });
   const {
     editingProfileId,
     editingProfile,
     handleEditProfile,
-    handleCloseEditProfile
+    handleCloseEditProfile,
   } = editProfile;
 
   return {
@@ -274,16 +270,8 @@ const useProfiles = () => {
     setMessage,
     setConfig,
     setGroupFilter,
-    statusFilter,
-    setStatusFilter,
     searchQuery,
     setSearchQuery,
-    sortBy,
-    setSortBy,
-    groupSortBy,
-    setGroupSortBy,
-    sortedGroups,
-    statusCounts,
     resetFilters,
     updateGroup,
     dismissBatchStatus,
@@ -325,7 +313,7 @@ const useProfiles = () => {
     handleExportCookiesJson,
     handleImportCookiesJson,
     handleUpdateMusicSearchTerm,
-    getStatusColor
+    getStatusColor,
   };
 };
 
