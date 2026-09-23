@@ -12,7 +12,9 @@ const ProfilesToolbar = ({
   setIsCreateProfileModalOpen,
   handleExportCookiesJson,
   handleImportCookiesJson,
-  clearTrash
+  clearTrash,
+  displayedCount = 0,
+  totalProfiles = 0
 }) => {
   const cookieFileInputRef = useRef(null);
 
@@ -27,8 +29,15 @@ const ProfilesToolbar = ({
   return (
     <div className="dash-top">
       <div>
-        <h2 className="page-title">Quản lý Profile</h2>
-        <p className="page-subtitle">Quản lý và tự động hóa các kênh TikTok</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <h2 className="page-title" style={{ margin: 0 }}>Quản lý Profile</h2>
+          <span className="badge-profile-counter">
+            {displayedCount !== totalProfiles
+              ? `Hiển thị ${displayedCount} / ${totalProfiles} profile`
+              : `${totalProfiles} profile`}
+          </span>
+        </div>
+        <p className="page-subtitle" style={{ marginTop: '4px' }}>Quản lý và tự động hóa các kênh TikTok</p>
       </div>
       <div className="dash-tools">
         <button

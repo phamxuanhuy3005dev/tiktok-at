@@ -2,13 +2,19 @@ import React from 'react';
 import {
   Play,
   RefreshCw,
-  Trash2
+  Trash2,
+  Search,
+  X,
+  RotateCcw
 } from 'lucide-react';
 
 const ProfilesActionBar = React.memo(({
   groups = [],
   groupFilter = 'all',
   setGroupFilter,
+  searchQuery = '',
+  setSearchQuery,
+  resetFilters,
   filteredProfiles = [],
   allFilteredSelected = false,
   toggleSelectAllFiltered,
@@ -18,33 +24,74 @@ const ProfilesActionBar = React.memo(({
   isLoading = false,
   startAutomation
 }) => {
+  const isFiltered = groupFilter !== 'all' || searchQuery.trim() !== '';
+
   return (
     <>
-      <div className="dash-filter">
+      <div className="dash-filter" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        {/* Search input */}
+        <div className="search-input-wrapper">
+          <Search size={14} className="search-icon" />
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Tìm theo tên profile..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="search-clear-btn"
+              onClick={() => setSearchQuery('')}
+              title="Xóa tìm kiếm"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Group Filter */}
         <label className="field-label">
-          Nhóm
           <select
             className="input input-compact"
-            style={{ minWidth: '180px' }}
+            style={{ minWidth: '160px' }}
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
           >
             <option value="all">Tất cả nhóm</option>
             <option value="ungrouped">Chưa phân nhóm</option>
             {groups.map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
+              <option key={g.id} value={g.id}>
+                {g.name} ({g.profile_count ?? 0})
+              </option>
             ))}
           </select>
         </label>
+
+        {/* Reset Filter Button */}
+        {isFiltered && (
+          <button
+            type="button"
+            className="btn-reset-filter"
+            onClick={resetFilters}
+            title="Đưa bộ lọc nhóm và tìm kiếm về mặc định"
+          >
+            <RotateCcw size={13} />
+            <span>Đặt lại</span>
+          </button>
+        )}
+
+        {/* Select All Checkbox */}
         {filteredProfiles.length > 0 && (
-          <label className="field-label" style={{ cursor: 'pointer' }}>
+          <label className="field-label" style={{ cursor: 'pointer', marginLeft: 'auto' }}>
             <input
               type="checkbox"
               checked={allFilteredSelected}
               onChange={toggleSelectAllFiltered}
               className="checkbox"
             />
-            Chọn tất cả
+            Chọn tất cả ({filteredProfiles.length})
           </label>
         )}
       </div>

@@ -1,19 +1,89 @@
-import React from 'react';
-import { Video, AlertCircle, ShieldCheck, FolderOpen, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import axios from 'axios';
+import {
+  Video,
+  AlertCircle,
+  ShieldCheck,
+  FolderOpen,
+  RefreshCw,
+  Trash2,
+  Sparkles,
+  FileImage,
+  HardDrive
+} from 'lucide-react';
 
 const SettingsView = ({
   config,
   setConfig,
   updateConfig,
   isSaving = false,
-  onSelectFolder
+  onSelectFolder,
+  setMessage
 }) => {
+  const [isClearingTrash, setIsClearingTrash] = useState(false);
+  const [isClearingDebug, setIsClearingDebug] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
+
+  const notify = (type, text) => {
+    if (typeof setMessage === 'function') {
+      setMessage({ type, text });
+    } else {
+      alert(text);
+    }
+  };
+
+  const handleClearTrash = async () => {
+    if (!window.confirm('Bạn có chắc muốn xóa vĩnh viễn toàn bộ profile trong Thùng rác (trash)? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+    setIsClearingTrash(true);
+    try {
+      const res = await axios.post('/api/system/clear-trash');
+      const freedMB = res.data?.freedMB || 0;
+      notify('success', `Đã dọn sạch thùng rác! Giải phóng ${freedMB} MB ổ đĩa.`);
+    } catch (err) {
+      notify('error', `Lỗi dọn thùng rác: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setIsClearingTrash(false);
+    }
+  };
+
+  const handleClearDebug = async () => {
+    setIsClearingDebug(true);
+    try {
+      const res = await axios.post('/api/system/clear-debug');
+      const freedMB = res.data?.freedMB || 0;
+      const count = res.data?.clearedCount || 0;
+      notify('success', `Đã dọn ${count} file debug screenshot! Giải phóng ${freedMB} MB.`);
+    } catch (err) {
+      notify('error', `Lỗi dọn file debug: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setIsClearingDebug(false);
+    }
+  };
+
+  const handleClearAllTemp = async () => {
+    if (!window.confirm('Dọn dẹp toàn bộ thùng rác và file tạm hệ thống để tối ưu dung lượng ổ đĩa?')) {
+      return;
+    }
+    setIsClearingAll(true);
+    try {
+      const res = await axios.post('/api/system/clear-all-temp');
+      const totalFreed = res.data?.totalFreedMB || 0;
+      notify('success', `Dọn dẹp hoàn tất! Tổng dung lượng đã giải phóng: ${totalFreed} MB.`);
+    } catch (err) {
+      notify('error', `Lỗi dọn dẹp hệ thống: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setIsClearingAll(false);
+    }
+  };
+
   return (
     <section>
       <div className="page-header">
         <div>
           <h2 className="page-title">Cấu hình Hệ thống</h2>
-          <p className="page-subtitle">Thiết lập tham số tự động hóa và tài nguyên hệ thống</p>
+          <p className="page-subtitle">Thiết lập tham số tự động hóa, tài nguyên và dọn dẹp dung lượng đĩa</p>
         </div>
       </div>
 
@@ -71,7 +141,7 @@ const SettingsView = ({
               </div>
             </div>
             <p className="input-hint">
-              Số lượng trình duyệt Playwright mở đồng thời khi chạy chế độ song song.
+              Số lượng trình duyệt Playwright mở đồng thời khi chạy chế độ song song (máy 4-8GB RAM nên để 1-2).
             </p>
           </div>
 
@@ -83,22 +153,68 @@ const SettingsView = ({
             disabled={isSaving}
           >
             {isSaving ? <RefreshCw size={18} className="animate-spin" /> : null}
-            <span>{isSaving ? 'Đang lưu thay đổi...' : 'Lưu Thay Đổi'}</span>
+            <span>{isSaving ? 'Đang lưu thay đổi...' : 'Lưu Cấu Hình'}</span>
           </button>
         </div>
       </div>
 
-      <div className="info-grid" style={{ marginTop: '24px', maxWidth: '640px' }}>
+      {/* Storage and Trash Clean-up Section */}
+      <div className="glass settings-card" style={{ marginTop: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <HardDrive size={20} color="var(--primary)" />
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Dọn Dẹp Dung Lượng Đĩa & Thùng Rác (Trash)</h3>
+        </div>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '16px' }}>
+          Khi bạn xóa profile, hệ thống chuyển thư mục vào thùng rác <code>trash/</code> để đề phòng xóa nhầm. Bạn có thể xóa sạch các thư mục này và file ảnh debug để giải phóng dung lượng ổ đĩa.
+        </p>
+
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleClearTrash}
+            disabled={isClearingTrash || isClearingAll}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#EF4444', borderColor: 'rgba(239,68,68,0.3)' }}
+          >
+            {isClearingTrash ? <RefreshCw size={15} className="animate-spin" /> : <Trash2 size={15} />}
+            <span>Dọn sạch Thùng rác (Xóa vĩnh viễn)</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleClearDebug}
+            disabled={isClearingDebug || isClearingAll}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            {isClearingDebug ? <RefreshCw size={15} className="animate-spin" /> : <FileImage size={15} />}
+            <span>Dọn dẹp ảnh Debug</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleClearAllTemp}
+            disabled={isClearingAll || isClearingTrash || isClearingDebug}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #10B981, #059669)' }}
+          >
+            {isClearingAll ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
+            <span>Dọn tất cả rác (Tối ưu đĩa)</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="info-grid" style={{ marginTop: '20px', maxWidth: '640px' }}>
         <div className="glass tip-card">
           <AlertCircle size={20} color="var(--accent)" style={{ marginBottom: '8px' }} />
-          <h4 style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Mẹo Hiệu Năng</h4>
+          <h4 style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Mẹo Hiệu Năng Cho Máy Yếu</h4>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Mỗi profile dùng 1 profile Chrome độc lập với cookies và phiên duyệt web biệt lập. Hãy để số song song phù hợp với dung lượng RAM máy.
+            Hệ thống đã tự động giới hạn RAM V8 (512MB) và bộ đệm ổ đĩa (32MB) cho mỗi profile Chrome. Với máy 4GB-8GB RAM, nên chạy 1-2 profile song song hoặc chọn chế độ Tuần tự.
           </p>
         </div>
         <div className="glass tip-card">
           <ShieldCheck size={20} color="var(--success)" style={{ marginBottom: '8px' }} />
-          <h4 style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Dữ liệu An toàn</h4>
+          <h4 style={{ fontSize: '0.85rem', marginBottom: '4px' }}>Dữ liệu An Toàn</h4>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
             Toàn bộ cơ sở dữ liệu được lưu trữ cục bộ trên máy bằng SQLite WAL Mode tốc độ cao, không lưu dữ liệu lên cloud bên ngoài.
           </p>

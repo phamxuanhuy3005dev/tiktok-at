@@ -1600,3 +1600,86 @@ input[type="radio"]:checked {
     animation: none;
   }
 }
+
+/* ---------- Profiles & Groups Enhancements ---------- */
+.badge-profile-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 63, 182, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(255, 63, 182, 0.25);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-input-wrapper .search-input {
+  padding-left: 32px;
+  padding-right: 28px;
+  height: 32px;
+  font-size: 0.8rem;
+  min-width: 190px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+.search-input-wrapper .search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(255, 63, 182, 0.2);
+}
+
+.search-input-wrapper .search-clear-btn {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-input-wrapper .search-clear-btn:hover {
+  color: var(--text);
+}
+
+.btn-reset-filter {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.btn-reset-filter:hover {
+  background: rgba(255, 63, 182, 0.1);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+

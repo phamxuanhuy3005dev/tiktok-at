@@ -13,9 +13,16 @@ export function initGroupSchema(db) {
         CREATE TABLE IF NOT EXISTS groups (
             id TEXT PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
+            video_folder TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    try {
+        const cols = db.prepare('PRAGMA table_info(groups)').all();
+        if (!cols.some(c => c.name === 'video_folder')) {
+            db.exec('ALTER TABLE groups ADD COLUMN video_folder TEXT;');
+        }
+    } catch (_) {}
 }
 
 function normalizeGroupName(name) {
@@ -31,7 +38,7 @@ function normalizeGroupName(name) {
 
 export function getGroupById(db, id) {
     return db
-        .prepare('SELECT id, name, created_at FROM groups WHERE id = ?')
+        .prepare('SELECT id, name, video_folder, created_at FROM groups WHERE id = ?')
         .get(id);
 }
 
@@ -48,11 +55,12 @@ export function listGroups(db) {
             SELECT
                 g.id,
                 g.name,
+                g.video_folder,
                 g.created_at,
                 COUNT(p.id) AS profile_count
             FROM groups g
             LEFT JOIN profiles p ON p.group_id = g.id
-            GROUP BY g.id, g.name, g.created_at
+            GROUP BY g.id, g.name, g.video_folder, g.created_at
             ORDER BY g.created_at DESC
         `
         )
@@ -105,6 +113,40 @@ export function createGroup(db, payload) {
     }
 }
 
+export function updateGroup(db, id, updates = {}) {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+        throw httpError(400, 'Group id is required');
+    }
+    const trimmedId = id.trim();
+    assertGroupExists(db, trimmedId);
+
+    if (updates.name !== undefined) {
+        const trimmedName = normalizeGroupName(updates.name);
+        const conflict = db
+            .prepare(
+                'SELECT id FROM groups WHERE LOWER(name) = LOWER(?) AND id != ?'
+            )
+            .get(trimmedName, trimmedId);
+        if (conflict) {
+            throw httpError(400, 'Group name already exists');
+        }
+        db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(
+            trimmedName,
+            trimmedId
+        );
+    }
+
+    if (updates.video_folder !== undefined) {
+        const folder = typeof updates.video_folder === 'string' ? updates.video_folder.trim() : null;
+        db.prepare('UPDATE groups SET video_folder = ? WHERE id = ?').run(
+            folder || null,
+            trimmedId
+        );
+    }
+
+    return getGroupById(db, trimmedId);
+}
+
 export function renameGroup(db, arg2, arg3) {
     let id;
     let name;
@@ -117,26 +159,7 @@ export function renameGroup(db, arg2, arg3) {
         name = arg3;
     }
 
-    if (!id || typeof id !== 'string' || id.trim() === '') {
-        throw httpError(400, 'Group id is required');
-    }
-
-    const trimmedId = id.trim();
-    assertGroupExists(db, trimmedId);
-    const trimmedName = normalizeGroupName(name);
-    const conflict = db
-        .prepare(
-            'SELECT id FROM groups WHERE LOWER(name) = LOWER(?) AND id != ?'
-        )
-        .get(trimmedName, trimmedId);
-    if (conflict) {
-        throw httpError(400, 'Group name already exists');
-    }
-    db.prepare('UPDATE groups SET name = ? WHERE id = ?').run(
-        trimmedName,
-        trimmedId
-    );
-    return getGroupById(db, trimmedId);
+    return updateGroup(db, id, { name });
 }
 
 export function deleteGroup(db, id) {

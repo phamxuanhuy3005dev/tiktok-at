@@ -29,6 +29,10 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
   const [config, setConfig] = useState({ videoFolder: '', maxConcurrency: 2 });
   const [groups, setGroups] = useState([]);
   const [groupFilter, setGroupFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('created_desc');
+  const [groupSortBy, setGroupSortBy] = useState('created_desc');
   const [activeTab, setActiveTab] = useState('profiles');
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -64,13 +68,70 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     }
   }, []);
 
+  const statusCounts = useMemo(() => {
+    const counts = { all: profiles.length, idle: 0, running: 0, success: 0, error: 0, no_videos: 0 };
+    profiles.forEach((p) => {
+      const s = p.status || 'idle';
+      if (s === 'uploading' || s === 'logging_in' || s === 'adding_favorite_music') {
+        counts.running = (counts.running || 0) + 1;
+      } else if (counts[s] !== undefined) {
+        counts[s]++;
+      } else {
+        counts[s] = 1;
+      }
+    });
+    return counts;
+  }, [profiles]);
+
   const filteredProfiles = useMemo(() => {
-    if (groupFilter === 'all') return profiles;
+    let list = [...profiles];
+
+    // 1. Group filter
     if (groupFilter === 'ungrouped') {
-      return profiles.filter((p) => !p.group_id);
+      list = list.filter((p) => !p.group_id);
+    } else if (groupFilter !== 'all') {
+      list = list.filter((p) => p.group_id === groupFilter);
     }
-    return profiles.filter((p) => p.group_id === groupFilter);
-  }, [profiles, groupFilter]);
+
+    // 2. Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((p) => (p.name && p.name.toLowerCase().includes(q)) || (p.channel_ids && p.channel_ids.toLowerCase().includes(q)));
+    }
+
+    return list;
+  }, [profiles, groupFilter, searchQuery]);
+
+  const sortedGroups = useMemo(() => {
+    const list = [...groups];
+    list.sort((a, b) => {
+      if (groupSortBy === 'created_desc') {
+        return (b.created_at || '').localeCompare(a.created_at || '');
+      }
+      if (groupSortBy === 'created_asc') {
+        return (a.created_at || '').localeCompare(b.created_at || '');
+      }
+      if (groupSortBy === 'name_asc') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (groupSortBy === 'name_desc') {
+        return (b.name || '').localeCompare(a.name || '');
+      }
+      if (groupSortBy === 'count_desc') {
+        return (b.profile_count || 0) - (a.profile_count || 0);
+      }
+      if (groupSortBy === 'count_asc') {
+        return (a.profile_count || 0) - (b.profile_count || 0);
+      }
+      return 0;
+    });
+    return list;
+  }, [groups, groupSortBy]);
+
+  const resetFilters = useCallback(() => {
+    setGroupFilter('all');
+    setSearchQuery('');
+  }, []);
 
   // Lightweight profile-only polling fetch (avoids re-fetching static config & groups)
   const fetchProfilesOnly = useCallback(async () => {
@@ -173,7 +234,13 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
         const next = gRes.data || [];
         if (
           prev.length === next.length &&
-          prev.every((g, i) => g.id === next[i]?.id && g.name === next[i]?.name)
+          prev.every(
+            (g, i) =>
+              g.id === next[i]?.id &&
+              g.name === next[i]?.name &&
+              g.video_folder === next[i]?.video_folder &&
+              g.profile_count === next[i]?.profile_count
+          )
         ) {
           return prev;
         }
@@ -241,10 +308,23 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     };
   }, [fetchData, fetchProfilesOnly]);
 
-  const dismissBatchStatus = useCallback(async () => {
-    setBatchStatus(null);
+  const dismissBatchStatus = useCallback(async (sessionId = null) => {
+    if (sessionId) {
+      setBatchStatus((prev) => {
+        if (!prev) return null;
+        if (prev.id === sessionId) return null;
+        if (prev.sessions) {
+          const nextSessions = prev.sessions.filter((s) => s.id !== sessionId);
+          if (nextSessions.length === 0) return null;
+          return { ...prev, sessions: nextSessions };
+        }
+        return prev;
+      });
+    } else {
+      setBatchStatus(null);
+    }
     try {
-      await axios.post('/api/batch-dismiss');
+      await axios.post('/api/batch-dismiss', { sessionId });
     } catch (err) {
       console.error('Failed to dismiss batch status on server:', err);
     }
@@ -263,6 +343,19 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
       setMessage({ type: 'error', text: errText });
     }
   }, [newGroupName, fetchData, setMessage]);
+
+  const updateGroup = useCallback(async (id, updates) => {
+    try {
+      const res = await axios.patch(`/api/groups/${id}`, updates);
+      if (res.data) {
+        setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, ...res.data } : g)));
+      }
+      await fetchData();
+      setMessage({ type: 'success', text: 'Cập nhật nhóm thành công' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Không thể cập nhật nhóm' });
+    }
+  }, [fetchData, setMessage]);
 
   const updateGroupName = useCallback(async (id, newName) => {
     if (!newName.trim()) {
@@ -543,6 +636,18 @@ export const useProfileData = ({ onProfilesFetched, selectedForRun, setSelectedF
     dismissBatchStatus,
     groupFilter,
     setGroupFilter,
+    statusFilter,
+    setStatusFilter,
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    groupSortBy,
+    setGroupSortBy,
+    sortedGroups,
+    statusCounts,
+    resetFilters,
+    updateGroup,
     editingId,
     setEditingId,
     editingValue,

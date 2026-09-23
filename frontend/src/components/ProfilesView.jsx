@@ -16,6 +16,14 @@ const ProfilesView = ({
   groups = [],
   groupFilter = 'all',
   setGroupFilter,
+  statusFilter = 'all',
+  setStatusFilter,
+  searchQuery = '',
+  setSearchQuery,
+  sortBy = 'created_desc',
+  setSortBy,
+  statusCounts = {},
+  resetFilters,
   allFilteredSelected = false,
   toggleSelectAllFiltered,
   selectedForRun = new Set(),
@@ -109,12 +117,17 @@ const ProfilesView = ({
           handleExportCookiesJson={handleExportCookiesJson}
           handleImportCookiesJson={handleImportCookiesJson}
           clearTrash={clearTrash}
+          displayedCount={filteredProfiles.length}
+          totalProfiles={profiles.length}
         />
 
         <ProfilesActionBar
           groups={groups}
           groupFilter={groupFilter}
           setGroupFilter={setGroupFilter}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          resetFilters={resetFilters}
           filteredProfiles={filteredProfiles}
           allFilteredSelected={allFilteredSelected}
           toggleSelectAllFiltered={toggleSelectAllFiltered}
@@ -171,8 +184,22 @@ const ProfilesView = ({
 
       {profiles.length > 0 && filteredProfiles.length === 0 && (
         <div className="empty-state empty-state--compact">
-          <p style={{ color: 'var(--text)', marginBottom: '8px', fontWeight: '600' }}>Không có profile nào trong nhóm này</p>
-          <p style={{ fontSize: '0.9rem' }}>Thay đổi bộ lọc nhóm ở trên để xem các profile khác.</p>
+          <p style={{ color: 'var(--text)', marginBottom: '8px', fontWeight: '600' }}>
+            Không tìm thấy profile nào phù hợp với bộ lọc hiện tại
+          </p>
+          <p style={{ fontSize: '0.9rem', marginBottom: '12px' }}>
+            Thử thay đổi từ khóa tìm kiếm hoặc đặt lại các bộ lọc về mặc định.
+          </p>
+          {resetFilters && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={resetFilters}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>Đặt lại bộ lọc</span>
+            </button>
+          )}
         </div>
       )}
 

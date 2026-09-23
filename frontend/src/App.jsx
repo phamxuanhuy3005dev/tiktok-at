@@ -42,7 +42,9 @@ const App = () => {
               editingGroupValue={ui.editingGroupValue}
               setEditingGroupValue={ui.setEditingGroupValue}
               updateGroupName={ui.updateGroupName}
+              updateGroup={ui.updateGroup}
               deleteGroup={ui.deleteGroup}
+              setMessage={ui.setMessage}
             />
           ) : (
             <SettingsView
@@ -51,6 +53,7 @@ const App = () => {
               updateConfig={ui.updateConfig}
               isSaving={ui.isSavingConfig}
               onSelectFolder={ui.handleSelectFolderForDefaultConfig}
+              setMessage={ui.setMessage}
             />
           )}
         </main>

@@ -12,6 +12,7 @@ import {
     loggingInProfiles,
     addingFavoriteMusicProfiles,
     getBatchSession,
+    getAllBatchSessions,
     dismissBatchSession
 } from '../services/tracker.js';
 import {
@@ -35,13 +36,19 @@ const router = express.Router();
 
 // GET /api/batch-status
 router.get('/batch-status', (req, res) => {
-    res.json(getBatchSession() || { status: 'idle' });
+    const sessions = getAllBatchSessions();
+    const latest = getBatchSession();
+    res.json({
+        ...(latest || { status: 'idle' }),
+        sessions: sessions.length > 0 ? sessions : (latest ? [latest] : [])
+    });
 });
 
 // POST /api/batch-status/dismiss & /api/batch-dismiss
 router.post(['/batch-status/dismiss', '/batch-dismiss'], (req, res) => {
-    dismissBatchSession();
-    res.json({ status: 'dismissed' });
+    const { sessionId } = req.body || {};
+    dismissBatchSession(sessionId || null);
+    res.json({ status: 'dismissed', sessionId: sessionId || 'all' });
 });
 
 // POST /api/start
@@ -55,8 +62,13 @@ router.post('/start', async (req, res) => {
             return res.status(400).json({ error: 'Profile already running or processing a video' });
         }
 
-        runSingleProfile(profile, !!limitUploads, Number(uploadLimitCount) || 0)
-            .catch(err => console.error(`Error running ${profile.name}:`, err));
+        executeBatchSession(
+            [profile],
+            'sequential',
+            !!limitUploads,
+            Number(uploadLimitCount) || 0,
+            { title: `Profile: ${profile.name}` }
+        ).catch(err => console.error(`Error running ${profile.name}:`, err));
 
         return res.json({ status: 'started', profile: profile.name });
     }

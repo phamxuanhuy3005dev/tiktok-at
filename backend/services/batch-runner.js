@@ -8,7 +8,39 @@ import {
     setBatchSession
 } from './tracker.js';
 
-export async function runSingleProfile(profile, limitUploads = false, uploadLimitCount = 0, forceUploadAll = false, specificFile = null) {
+export function distributeVideosEvenly(videoList, profileCount) {
+    if (!profileCount || profileCount <= 0) return [];
+    if (!Array.isArray(videoList) || videoList.length === 0) {
+        return Array.from({ length: profileCount }, () => []);
+    }
+
+    const n = videoList.length;
+    const m = profileCount;
+    const distribution = [];
+    let currentIndex = 0;
+
+    for (let i = 0; i < m; i++) {
+        const countForThisProfile = Math.floor(n / m) + (i < (n % m) ? 1 : 0);
+        if (countForThisProfile > 0 && currentIndex < n) {
+            distribution.push(videoList.slice(currentIndex, currentIndex + countForThisProfile));
+            currentIndex += countForThisProfile;
+        } else {
+            distribution.push([]);
+        }
+    }
+
+    return distribution;
+}
+
+export async function runSingleProfile(
+    profile,
+    limitUploads = false,
+    uploadLimitCount = 0,
+    forceUploadAll = false,
+    specificFile = null,
+    assignedVideos = null,
+    overrideFolder = null
+) {
     if (runningProfiles.has(profile.id)) {
         return { success: false, uploadedCount: 0, error: 'Already running', profileId: profile.id, profileName: profile.name };
     }
@@ -19,10 +51,13 @@ export async function runSingleProfile(profile, limitUploads = false, uploadLimi
 
     let uploadedCount = 0;
     try {
-        const videoFolder = profile.video_folder || getConfig('videoFolder', UPLOADS_DIR);
+        const videoFolder = overrideFolder || profile.video_folder || getConfig('videoFolder', UPLOADS_DIR);
         let videos = [];
         try {
-            if (specificFile) {
+            if (Array.isArray(assignedVideos) && assignedVideos.length > 0) {
+                videos = assignedVideos;
+                console.log(`[${profile.name}] Assigned ${videos.length} videos from ${videoFolder}`);
+            } else if (specificFile) {
                 if (fs.existsSync(specificFile)) {
                     videos = [path.basename(specificFile)];
                     console.log(`[${profile.name}] Single-file mode: uploading ${specificFile}`);
@@ -76,9 +111,21 @@ export async function runSingleProfile(profile, limitUploads = false, uploadLimi
     }
 }
 
-export async function executeBatchSession(idleProfiles, runMode, limitUploads = false, uploadLimitCount = 0) {
+export async function executeBatchSession(
+    idleProfiles,
+    runMode = 'parallel',
+    limitUploads = false,
+    uploadLimitCount = 0,
+    options = {}
+) {
+    const sessionId = options.sessionId || ('batch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+    const title = options.title || `Chạy tự động ${idleProfiles.length} profile`;
+    const assignedVideosMap = options.assignedVideosMap || null;
+    const overrideFolder = options.overrideFolder || null;
+
     const session = {
-        id: Date.now(),
+        id: sessionId,
+        title,
         totalProfiles: idleProfiles.length,
         runMode,
         limitUploads: !!limitUploads,
@@ -100,14 +147,32 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
     };
     setBatchSession(session);
 
-    console.log(`[BatchSession] Starting Round 1 with ${idleProfiles.length} profiles...`);
+    console.log(`[BatchSession ${sessionId}] Starting Round 1: "${title}" with ${idleProfiles.length} profiles...`);
 
     const runBatchQueue = async (profilesToRun, onProfileDone) => {
+        const runOne = async (profile) => {
+            if (runningProfiles.has(profile.id)) return;
+            const myVideos = assignedVideosMap ? (assignedVideosMap[profile.id] || []) : null;
+            if (assignedVideosMap && (!myVideos || myVideos.length === 0)) {
+                console.log(`[BatchSession] ${profile.name} has no videos assigned. Skipping.`);
+                onProfileDone(profile, { success: false, uploadedCount: 0, error: 'Không được chia video nào' });
+                return;
+            }
+            const res = await runSingleProfile(
+                profile,
+                session.limitUploads,
+                session.uploadLimitCount,
+                false,
+                null,
+                myVideos,
+                overrideFolder
+            );
+            onProfileDone(profile, res);
+        };
+
         if (runMode === 'sequential') {
             for (const profile of profilesToRun) {
-                if (runningProfiles.has(profile.id)) continue;
-                const res = await runSingleProfile(profile, session.limitUploads, session.uploadLimitCount);
-                onProfileDone(profile, res);
+                await runOne(profile);
             }
         } else {
             const maxConcurrency = Number(getConfig('maxConcurrency', 2));
@@ -121,10 +186,7 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
                         continue;
                     }
                     const profile = queue.shift();
-                    const promise = runSingleProfile(profile, session.limitUploads, session.uploadLimitCount)
-                        .then((res) => {
-                            onProfileDone(profile, res);
-                        })
+                    const promise = runOne(profile)
                         .finally(() => {
                             const idx = active.indexOf(promise);
                             if (idx !== -1) active.splice(idx, 1);
@@ -147,7 +209,8 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
             session.round1.failed.push({ id: profile.id, name: profile.name, error: errReason });
             console.log(`[BatchSession] Round 1: ${profile.name} failed (${errReason}).`);
         }
-        session.message = `Lượt 1: ${session.round1.completed.length}/${session.round1.total} hoàn thành, ${session.round1.failed.length} lỗi`;
+        session.message = `Lượt 1: ${session.round1.completed.length}/${session.round1.total} hoàn thành${session.round1.failed.length > 0 ? `, ${session.round1.failed.length} lỗi` : ''}`;
+        setBatchSession(session);
     });
 
     console.log(`[BatchSession] Round 1 completed. ${session.round1.completed.length} succeeded, ${session.round1.failed.length} failed.`);
@@ -161,7 +224,8 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
             session.status = 'retrying_round2';
             session.round = 2;
             session.retry.total = profilesToRetry.length;
-            session.message = `Lượt 1 hoàn thành (${session.round1.completed.length} thành công, ${session.round1.failed.length} lỗi). Đang chạy lại ${profilesToRetry.length} profile lỗi...`;
+            session.message = `Lượt 1: ${session.round1.completed.length} thành công, ${session.round1.failed.length} lỗi. Đang tự động chạy lại ${profilesToRetry.length} profile lỗi...`;
+            setBatchSession(session);
 
             console.log(`[BatchSession] Starting Retry Round for ${profilesToRetry.length} failed profiles...`);
 
@@ -175,6 +239,7 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
                     console.log(`[BatchSession] Retry: ${profile.name} failed again (${errReason}).`);
                 }
                 session.message = `Đang chạy lại: ${session.retry.completed.length + session.retry.failed.length}/${session.retry.total} (${session.retry.completed.length} thành công, ${session.retry.failed.length} vẫn lỗi)`;
+                setBatchSession(session);
             });
         }
     }
@@ -188,7 +253,7 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
     if (session.round1.failed.length === 0) {
         finalSummaryText = `🎉 Tất cả ${session.totalProfiles} profile đã hoàn thành xuất sắc trong lượt 1!`;
     } else {
-        finalSummaryText = `📊 Hoàn tất batch upload!\n• Lượt 1: ${session.round1.completed.length}/${session.totalProfiles} thành công, ${session.round1.failed.length} lỗi.\n• Lượt retry: ${session.retry.completed.length}/${session.retry.total} thành công.\n• Tổng kết: ${totalSucceeded}/${session.totalProfiles} thành công, ${finalFailed.length} lỗi.`;
+        finalSummaryText = `📊 Hoàn tất!\n• Lượt 1: ${session.round1.completed.length}/${session.totalProfiles} thành công, ${session.round1.failed.length} lỗi.\n• Lượt retry: ${session.retry.completed.length}/${session.retry.total} thành công.\n• Tổng kết: ${totalSucceeded}/${session.totalProfiles} thành công, ${finalFailed.length} lỗi.`;
     }
 
     session.summary = {
@@ -202,8 +267,53 @@ export async function executeBatchSession(idleProfiles, runMode, limitUploads = 
         finalSummaryText
     };
     session.message = finalSummaryText;
+    setBatchSession(session);
 
     console.log(`[BatchSession] Execution finished:\n${finalSummaryText}`);
+    return session;
+}
+
+export async function executeGroupBatchSession(
+    group,
+    profiles,
+    videoFolder,
+    runMode = 'parallel',
+    limitUploads = false,
+    uploadLimitCount = 0
+) {
+    if (!videoFolder || !fs.existsSync(videoFolder)) {
+        throw new Error(`Thư mục video không tồn tại: ${videoFolder}`);
+    }
+
+    const videos = fs.readdirSync(videoFolder).filter(file => {
+        if (file.startsWith('.')) return false;
+        const ext = path.extname(file).toLowerCase();
+        return ext === '.mp4' || ext === '.mov' || ext === '.webm';
+    }).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+    if (videos.length === 0) {
+        throw new Error(`Không tìm thấy video (.mp4, .mov, .webm) nào trong thư mục: ${videoFolder}`);
+    }
+
+    const idleProfiles = profiles.filter(p => !runningProfiles.has(p.id) && !processingProfiles.has(p.id));
+    if (idleProfiles.length === 0) {
+        throw new Error('Tất cả profile trong nhóm đều đang bận xử lý hoặc đang mở.');
+    }
+
+    const distribution = distributeVideosEvenly(videos, idleProfiles.length);
+    const assignedVideosMap = {};
+    idleProfiles.forEach((p, idx) => {
+        assignedVideosMap[p.id] = distribution[idx];
+    });
+
+    const options = {
+        title: `Nhóm: ${group.name} (${idleProfiles.length} profiles · ${videos.length} videos)`,
+        assignedVideosMap,
+        overrideFolder: videoFolder,
+        groupId: group.id
+    };
+
+    return executeBatchSession(idleProfiles, runMode, limitUploads, uploadLimitCount, options);
 }
 
 export async function runAllParallel(profilesToRun, limitUploads = false, uploadLimitCount = 0) {
