@@ -634,7 +634,7 @@ export async function uploadVideo(
   };
 
   try {
-    let page = await browser.newPage();
+    let page = browser.pages().length > 0 ? browser.pages()[0] : await browser.newPage();
     log(`Automation started for profile: ${profile.name}`);
 
     if (videos.length === 0) {
@@ -1299,10 +1299,12 @@ export async function uploadVideo(
           log(`ERROR deleting file: ${err.message}`);
         }
 
-        // Discard the upload by closing the page and opening a new one
-        log('Resetting page to discard current upload...');
-        await page.close().catch(() => null);
-        page = await browser.newPage();
+        // Discard the upload by reloading the upload page in the same tab
+        log('Resetting upload page for next video...');
+        await page.goto('https://www.tiktok.com/tiktokstudio/upload', {
+          waitUntil: 'domcontentloaded',
+          timeout: 30000,
+        }).catch(() => null);
         continue; // Skip rest of loop and process next video
       }
       // --- END TASK: Content Check Lite ---
@@ -1637,19 +1639,15 @@ export async function uploadVideo(
           log(`ERROR deleting file: ${err.message}`);
         }
 
-        // Wait before next loop iteration to let things settle and recycle page to prevent RAM accumulation
+        // Wait before next loop iteration to let things settle
         if (i < videos.length - 1) {
-          log(`Preparing for next video (recycling tab to free memory)...`);
-          await page.close().catch(() => null);
+          log(`Video ${i + 1} completed. Waiting 2s before next upload...`);
           await new Promise((r) => setTimeout(r, 2000));
-          page = await browser.newPage();
         }
       } else {
         if (i < videos.length - 1) {
-          log(`Upload did not finalize. Recycling tab for next video...`);
-          await page.close().catch(() => null);
+          log(`Upload did not finalize. Waiting 2s before trying next video...`);
           await new Promise((r) => setTimeout(r, 2000));
-          page = await browser.newPage();
         }
       }
     }
@@ -1697,7 +1695,7 @@ export async function runTikTokLogin(profile) {
   log('Kiá»ƒm tra phiÃªn Ä‘Äƒng nháº­p Cookie...');
 
   try {
-    const tiktokPage = await browser.newPage();
+    const tiktokPage = browser.pages().length > 0 ? browser.pages()[0] : await browser.newPage();
     await injectProfileCookies(browser, profile);
 
     await tiktokPage.goto('https://www.tiktok.com/', {
@@ -1788,7 +1786,7 @@ export async function addFavoriteMusic(profile, searchTerm) {
   log(`Searching for music: "${searchTerm}"`);
 
   try {
-    const page = await browser.newPage();
+    const page = browser.pages().length > 0 ? browser.pages()[0] : await browser.newPage();
     await page.goto('https://www.tiktok.com/tiktokstudio/upload', {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
