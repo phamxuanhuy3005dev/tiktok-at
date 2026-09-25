@@ -68,11 +68,14 @@ export const describeScheduleInput = (input) => {
 };
 
 export async function resolveScheduleInputs(page, log) {
+  const scheduleInputSelector =
+    'input.TUXTextInputCore-input, input[placeholder*="YYYY"], input[placeholder*="HH"], .date-picker-input input, .time-picker-input input';
+
   await page
     .waitForFunction(
-      () => {
+      (sel) => {
         const visibleInputs = Array.from(
-          document.querySelectorAll('input.TUXTextInputCore-input'),
+          document.querySelectorAll(sel),
         ).filter((input) => {
           const style = window.getComputedStyle(input);
           const rect = input.getBoundingClientRect();
@@ -85,14 +88,36 @@ export async function resolveScheduleInputs(page, log) {
         });
         return visibleInputs.length >= 2;
       },
-      { timeout: 10000 },
+      scheduleInputSelector,
+      { timeout: 8000 },
     )
     .catch(() => null);
 
-  const locator = page.locator('input.TUXTextInputCore-input:visible');
-  const count = await locator.count();
-  const inputs = [];
+  let locator = page.locator('input.TUXTextInputCore-input:visible');
+  let count = await locator.count();
 
+  if (count < 2) {
+    locator = page.locator(
+      'input.TUXTextInputCore-input:visible, input[placeholder*="YYYY"]:visible, input[placeholder*="HH"]:visible, .date-picker-input input:visible, .time-picker-input input:visible',
+    );
+    count = await locator.count();
+  }
+
+  if (count < 2) {
+    // Re-click schedule option in case React didn't toggle
+    const scheduleOption = page
+      .locator(
+        'label:has(input[value="schedule"]), [data-e2e*="schedule"], .radio-group:has-text("Schedule")',
+      )
+      .first();
+    if ((await scheduleOption.count()) > 0) {
+      await scheduleOption.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(2000);
+      count = await locator.count();
+    }
+  }
+
+  const inputs = [];
   for (let index = 0; index < count; index++) {
     const meta = await locator.nth(index).evaluate((input) => {
       const rect = input.getBoundingClientRect();
@@ -151,58 +176,65 @@ export async function fillScheduleInput(page, inputMeta, value, label, log) {
   }
 
   const input = page
-    .locator('input.TUXTextInputCore-input:visible')
+    .locator(
+      'input.TUXTextInputCore-input:visible, input[placeholder*="YYYY"]:visible, input[placeholder*="HH"]:visible, .date-picker-input input:visible, .time-picker-input input:visible',
+    )
     .nth(inputMeta.index);
   log(`Setting ${label} using ${describeScheduleInput(inputMeta)} => ${value}`);
 
-  await input.scrollIntoViewIfNeeded();
+  await input.scrollIntoViewIfNeeded().catch(() => {});
   await input
     .evaluate((el) => el.removeAttribute('readonly'))
     .catch(() => null);
-  await input.click({ clickCount: 3 });
-  await page.waitForTimeout(500);
 
   if (label === 'Time') {
     const pickerSelector = '.tiktok-timepicker-time-picker-container';
     const picker = page.locator(pickerSelector);
     try {
+      await input.click({ clickCount: 3 });
+      await page.waitForTimeout(400);
+
       if (await picker.isVisible({ timeout: 2000 })) {
         log(`Time picker detected. Selecting items directly...`);
         const [targetHour, targetMinute] = value.split(':');
         const hourEl = picker
           .locator(`.tiktok-timepicker-left:has-text("${targetHour}")`)
           .first();
-        if (await hourEl.isVisible()) await hourEl.click({ force: true });
+        if ((await hourEl.count()) > 0) {
+          await hourEl.scrollIntoViewIfNeeded().catch(() => {});
+          await hourEl.click({ force: true }).catch(() => {});
+        }
         const minuteEl = picker
           .locator(`.tiktok-timepicker-right:has-text("${targetMinute}")`)
           .first();
-        if (await minuteEl.isVisible()) await minuteEl.click({ force: true });
-        await input.click();
-        await page.waitForTimeout(500);
-        return;
+        if ((await minuteEl.count()) > 0) {
+          await minuteEl.scrollIntoViewIfNeeded().catch(() => {});
+          await minuteEl.click({ force: true }).catch(() => {});
+        }
       }
     } catch (e) {
       log(
         `Time picker interaction failed: ${e.message}. Falling back to fill.`,
       );
     }
+
+    // Always fill directly to guarantee the value is written
+    await input.click({ clickCount: 3 });
+    await input.fill(value);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape'); // dismiss time picker overlay
+    await page.waitForTimeout(400);
+    return;
   }
 
   if (label === 'Date') {
     const pickerSelector = '.calendar-wrapper';
     try {
-      if (
-        !(await page
-          .locator(pickerSelector)
-          .isVisible({ timeout: 500 })
-          .catch(() => false))
-      ) {
-        await input.click();
-      }
-      await page.waitForTimeout(1000);
+      await input.click();
+      await page.waitForTimeout(500);
 
       const picker = page.locator(pickerSelector).first();
-      if (await picker.isVisible({ timeout: 3000 })) {
+      if (await picker.isVisible({ timeout: 2000 })) {
         log(`Calendar picker detected. Selecting day directly...`);
         const parts = value.split(/[-/.]/).map(Number);
         let targetDay = parts[2];
@@ -220,7 +252,9 @@ export async function fillScheduleInput(page, inputMeta, value, label, log) {
             if (!classAttr.includes('disabled')) {
               log(`Clicking calendar day cell: ${text}`);
               await cell.click({ force: true });
-              await page.waitForTimeout(500);
+              await page.waitForTimeout(400);
+              await page.keyboard.press('Escape'); // dismiss calendar
+              await page.waitForTimeout(300);
               return;
             }
           }
@@ -231,11 +265,19 @@ export async function fillScheduleInput(page, inputMeta, value, label, log) {
         `Calendar picker interaction failed: ${e.message}. Falling back to fill.`,
       );
     }
+
+    await input.click({ clickCount: 3 });
+    await input.fill(value);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape'); // dismiss calendar overlay
+    await page.waitForTimeout(400);
+    return;
   }
 
   await input.fill(value);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(500);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
 }
 
 export const dismissPopups = async (page) => {
@@ -612,6 +654,7 @@ export async function uploadVideo(
 
   const userDataDir = path.join(PROFILES_DIR, profile.name);
   let uploadedCount = 0;
+  const failedVideos = [];
   let lastScheduledTime = null;
   let hasExistingSchedule = false;
 
@@ -640,7 +683,17 @@ export async function uploadVideo(
     if (videos.length === 0) {
       log(`No compatible videos found in ${videoFolder}. Skipping.`);
       await browser.close();
-      return 0;
+      return {
+        uploadedCount: 0,
+        failedVideos: [],
+        totalTarget: 0,
+        valueOf() {
+          return 0;
+        },
+        toString() {
+          return '0';
+        },
+      };
     }
 
     const maxUploads =
@@ -672,17 +725,36 @@ export async function uploadVideo(
       const videoFileName = videos[i];
       const videoPath = path.join(videoFolder, videoFileName);
 
-      log(`Processing video ${i + 1}/${videos.length}: ${videoFileName}`);
+      if (!fs.existsSync(videoPath)) {
+        log(`Video file ${videoFileName} no longer exists. Skipping.`);
+        continue;
+      }
 
-      // Navigate to upload page with active polling
-      let initialized = false;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          log(`Navigating to upload page (Attempt ${attempt}/3)...`);
-          await page.goto('https://www.tiktok.com/tiktokstudio/upload', {
-            waitUntil: 'domcontentloaded',
-            timeout: 30000,
-          });
+      let videoUploaded = false;
+      const MAX_VIDEO_ATTEMPTS = 2;
+
+      for (
+        let videoAttempt = 1;
+        videoAttempt <= MAX_VIDEO_ATTEMPTS;
+        videoAttempt++
+      ) {
+        if (videoAttempt > 1) {
+          log(
+            `[Retry Video] Attempt ${videoAttempt}/${MAX_VIDEO_ATTEMPTS} for ${videoFileName}...`,
+          );
+        } else {
+          log(`Processing video ${i + 1}/${videos.length}: ${videoFileName}`);
+        }
+
+        // Navigate to upload page with active polling
+        let initialized = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            log(`Navigating to upload page (Attempt ${attempt}/3)...`);
+            await page.goto('https://www.tiktok.com/tiktokstudio/upload', {
+              waitUntil: 'domcontentloaded',
+              timeout: 30000,
+            });
 
           log(`Active polling for upload components...`);
           // Smart polling loop: check every 1s for up to 30s
@@ -1301,11 +1373,14 @@ export async function uploadVideo(
 
         // Discard the upload by reloading the upload page in the same tab
         log('Resetting upload page for next video...');
-        await page.goto('https://www.tiktok.com/tiktokstudio/upload', {
-          waitUntil: 'domcontentloaded',
-          timeout: 30000,
-        }).catch(() => null);
-        continue; // Skip rest of loop and process next video
+        await page
+          .goto('https://www.tiktok.com/tiktokstudio/upload', {
+            waitUntil: 'domcontentloaded',
+            timeout: 30000,
+          })
+          .catch(() => null);
+        videoUploaded = false;
+        break; // Break out of videoAttempt loop (do not retry violating file)
       }
       // --- END TASK: Content Check Lite ---
 
@@ -1315,7 +1390,7 @@ export async function uploadVideo(
           log(`Auto-increment schedule: processing video ${i + 1}...`);
 
           if (hasExistingSchedule) {
-            // ALL videos scheduled â€” existing scheduled batch detected on TikTok
+            // ALL videos scheduled — existing scheduled batch detected on TikTok
             // No immediate publish for any video
             // 1. Click "Schedule" radio
             const scheduleRadio = 'input[value="schedule"]';
@@ -1327,8 +1402,14 @@ export async function uploadVideo(
             await scheduleRadioInput
               .check({ force: true })
               .catch(() => scheduleRadioInput.click({ force: true }));
+            const parentLabel = page
+              .locator('label:has(input[value="schedule"]), [data-e2e*="schedule"]')
+              .first();
+            if ((await parentLabel.count()) > 0) {
+              await parentLabel.click({ force: true }).catch(() => {});
+            }
             log(`Selected "Schedule" option (existing batch).`);
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(2500);
 
             // 2. Resolve inputs
             const scheduleInputs = await resolveScheduleInputs(page, log);
@@ -1367,7 +1448,8 @@ export async function uploadVideo(
               'Time',
               log,
             );
-            await page.waitForTimeout(2000);
+            await page.keyboard.press('Escape').catch(() => {});
+            await page.waitForTimeout(1000);
 
             if (process.env.TIKTOK_DEBUG_SCREENSHOTS === 'true') {
               await page
@@ -1380,9 +1462,9 @@ export async function uploadVideo(
                 })
                 .catch(() => null);
             }
-          } else if (i === 0) {
+          } else if (uploadedCount === 0) {
             log(`Video 1: Posting immediately (Public).`);
-            // Public is usually default, but we can ensure it if needed
+            // Public is default
           } else {
             // Normal auto-increment: video 2 captures default, video 3+ increments
             // 1. Click "Schedule" radio
@@ -1395,22 +1477,34 @@ export async function uploadVideo(
             await scheduleRadioInput
               .check({ force: true })
               .catch(() => scheduleRadioInput.click({ force: true }));
+            const parentLabel = page
+              .locator('label:has(input[value="schedule"]), [data-e2e*="schedule"]')
+              .first();
+            if ((await parentLabel.count()) > 0) {
+              await parentLabel.click({ force: true }).catch(() => {});
+            }
             log(`Selected "Schedule" option.`);
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(2500);
 
             // 2. Resolve inputs
             const scheduleInputs = await resolveScheduleInputs(page, log);
 
-            if (i === 1) {
+            if (uploadedCount === 1 && !lastScheduledTime) {
               // Video 2: Capture TikTok's default time
               const defaultDate = await page
-                .locator('input.TUXTextInputCore-input:visible')
+                .locator(
+                  'input.TUXTextInputCore-input:visible, input[placeholder*="YYYY"]:visible, .date-picker-input input:visible',
+                )
                 .nth(scheduleInputs.date.index)
-                .inputValue();
+                .inputValue()
+                .catch(() => '');
               const defaultTime = await page
-                .locator('input.TUXTextInputCore-input:visible')
+                .locator(
+                  'input.TUXTextInputCore-input:visible, input[placeholder*="HH"]:visible, .time-picker-input input:visible',
+                )
                 .nth(scheduleInputs.time.index)
-                .inputValue();
+                .inputValue()
+                .catch(() => '');
               log(`TikTok default schedule: ${defaultDate} ${defaultTime}`);
 
               lastScheduledTime = new Date(`${defaultDate} ${defaultTime}`);
@@ -1424,6 +1518,7 @@ export async function uploadVideo(
                   now: new Date(),
                 });
               }
+              await page.keyboard.press('Escape').catch(() => {});
             } else {
               // Video 3+: Increment by intervalMinutes (5 or 10 mins)
               const intervalMin = profile.schedule_interval || 5;
@@ -1457,7 +1552,8 @@ export async function uploadVideo(
                 'Time',
                 log,
               );
-              await page.waitForTimeout(2000);
+              await page.keyboard.press('Escape').catch(() => {});
+              await page.waitForTimeout(1000);
             }
 
             if (process.env.TIKTOK_DEBUG_SCREENSHOTS === 'true') {
@@ -1530,21 +1626,50 @@ export async function uploadVideo(
         await dismissPopups(page);
 
         const postSelectors = [
+          'button[data-e2e="post_video_button"]',
           'button.common-button-post-video',
-          '[data-e2e="post_video_button"]',
-          'button[data-e2e*="post"]',
-          'button[data-e2e*="schedule"]',
           'button:has-text("Schedule")',
+          'button:has-text("Lên lịch")',
           'button:has-text("Post"):not(:has-text("draft"))',
+          'button:has-text("Đăng"):not(:has-text("nháp"))',
+          'button[data-e2e*="post_button"]',
+          'button[data-e2e*="schedule_button"]',
         ];
 
         let targetBtn = null;
         for (const sel of postSelectors) {
-          const btn = await page.$(sel);
-          if (btn && (await btn.isVisible()) && !(await btn.isDisabled())) {
-            targetBtn = btn;
-            break;
-          }
+          try {
+            const btns = await page.$$(sel);
+            for (const btn of btns) {
+              if ((await btn.isVisible()) && !(await btn.isDisabled())) {
+                const text = (
+                  (await btn.innerText().catch(() => '')) || ''
+                ).trim();
+                const lower = text.toLowerCase();
+                if (
+                  lower.includes('cancel') ||
+                  lower.includes('hủy') ||
+                  lower.includes('draft') ||
+                  lower.includes('nháp') ||
+                  lower.includes('bản nháp')
+                ) {
+                  continue;
+                }
+                // Must have text matching post/schedule or be the exact data-e2e="post_video_button"
+                if (
+                  lower.includes('post') ||
+                  lower.includes('schedule') ||
+                  lower.includes('đăng') ||
+                  lower.includes('lên lịch') ||
+                  sel === 'button[data-e2e="post_video_button"]'
+                ) {
+                  targetBtn = btn;
+                  break;
+                }
+              }
+            }
+            if (targetBtn) break;
+          } catch (_) {}
         }
 
         if (clickAttempt === 0) {
@@ -1552,10 +1677,13 @@ export async function uploadVideo(
         }
 
         if (targetBtn) {
-          const btnLabel = await targetBtn.innerText().catch(() => 'Post');
+          const btnLabel = (
+            (await targetBtn.innerText().catch(() => '')) || 'Post'
+          ).trim();
           log(
-            `Clicking ${btnLabel.trim()} button (Attempt ${clickAttempt + 1})...`,
+            `Clicking ${btnLabel || 'Post'} button (Attempt ${clickAttempt + 1})...`,
           );
+          await targetBtn.scrollIntoViewIfNeeded().catch(() => {});
           try {
             // Strategy A: Real browser click
             await targetBtn.click({ force: true, timeout: 5000 });
@@ -1564,6 +1692,12 @@ export async function uploadVideo(
             await targetBtn.evaluate((node) => node.click()).catch(() => null);
           }
           await dismissPopups(page);
+        } else {
+          log(
+            `Target Post/Schedule button not found or disabled on attempt ${clickAttempt + 1}.`,
+          );
+          await page.keyboard.press('Escape').catch(() => {});
+          await dismissPopups(page);
         }
 
         // Success detection polling (Wait up to 15s per attempt)
@@ -1571,7 +1705,7 @@ export async function uploadVideo(
           await page.waitForTimeout(5000);
 
           const postBtnGone = !(await page.$(
-            'button:has-text("Post"), button:has-text("Schedule")',
+            'button:has-text("Post"), button:has-text("Schedule"), button:has-text("Đăng"), button:has-text("Lên lịch")',
           ));
           const successMsg = await page.$(
             'text="Uploaded", text="Success", text="View video", text="Manage your posts", text="Share video", text="Scheduled", text="Your video has been uploaded"',
@@ -1635,23 +1769,52 @@ export async function uploadVideo(
             log(`SUCCESS: Deleted ${videoFileName} after upload.`);
           }
           uploadedCount++;
+          videoUploaded = true;
         } catch (err) {
           log(`ERROR deleting file: ${err.message}`);
         }
-
-        // Wait before next loop iteration to let things settle
-        if (i < videos.length - 1) {
-          log(`Video ${i + 1} completed. Waiting 2s before next upload...`);
-          await new Promise((r) => setTimeout(r, 2000));
-        }
+        break; // Success! Break out of videoAttempt loop
       } else {
-        if (i < videos.length - 1) {
-          log(`Upload did not finalize. Waiting 2s before trying next video...`);
-          await new Promise((r) => setTimeout(r, 2000));
+        log(
+          `Attempt ${videoAttempt}/${MAX_VIDEO_ATTEMPTS} for ${videoFileName} did not finalize.`,
+        );
+        if (videoAttempt < MAX_VIDEO_ATTEMPTS) {
+          log(`Resetting upload page to retry ${videoFileName}...`);
+          await page
+            .goto('https://www.tiktok.com/tiktokstudio/upload', {
+              waitUntil: 'domcontentloaded',
+              timeout: 30000,
+            })
+            .catch(() => null);
+          await page.waitForTimeout(2000);
         }
       }
+    } // end videoAttempt loop
+
+    if (!videoUploaded) {
+      log(
+        `ERROR: Could not upload ${videoFileName} after ${MAX_VIDEO_ATTEMPTS} attempts. Keeping file on disk.`,
+      );
+      failedVideos.push(videoFileName);
     }
-    return uploadedCount;
+
+    if (i < videos.length - 1 && uploadedCount < maxUploads) {
+      log(`Waiting 2s before next video...`);
+      await page.waitForTimeout(2000);
+    }
+  } // end videos loop
+
+  return {
+    uploadedCount,
+    failedVideos,
+    totalTarget: Math.min(videos.length, maxUploads),
+    valueOf() {
+      return this.uploadedCount;
+    },
+    toString() {
+      return String(this.uploadedCount);
+    },
+  };
   } catch (error) {
     appendLogSafe(
       `[${new Date().toISOString()}] CRITICAL ERROR: ${error.message}\n${error.stack}\n`,

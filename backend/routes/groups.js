@@ -98,14 +98,19 @@ router.post('/groups/:id/preview-distribution', (req, res) => {
         a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }),
       );
 
-    const profiles = db
+    let profiles = db
       .prepare(
         'SELECT id, name, status FROM profiles WHERE group_id = ? ORDER BY name ASC',
       )
       .all(group.id);
 
+    if (Array.isArray(req.body.profileIds) && req.body.profileIds.length > 0) {
+      const selectedIdSet = new Set(req.body.profileIds.map(Number));
+      profiles = profiles.filter((p) => selectedIdSet.has(Number(p.id)));
+    }
+
     if (profiles.length === 0) {
-      return res.status(400).json({ error: 'Nhóm này chưa có profile nào.' });
+      return res.status(400).json({ error: 'Nhóm này không có profile nào phù hợp.' });
     }
 
     const distribution = distributeVideosEvenly(videos, profiles.length);
@@ -150,11 +155,17 @@ router.post('/groups/:id/start-automation', async (req, res) => {
       updateGroup(db, group.id, { video_folder: req.body.videoFolder });
     }
 
-    const profiles = db
+    let profiles = db
       .prepare('SELECT * FROM profiles WHERE group_id = ? ORDER BY name ASC')
       .all(group.id);
+
+    if (Array.isArray(req.body.profileIds) && req.body.profileIds.length > 0) {
+      const selectedIdSet = new Set(req.body.profileIds.map(Number));
+      profiles = profiles.filter((p) => selectedIdSet.has(Number(p.id)));
+    }
+
     if (profiles.length === 0) {
-      return res.status(400).json({ error: 'Nhóm này chưa có profile nào.' });
+      return res.status(400).json({ error: 'Không có profile nào được chọn để chạy.' });
     }
 
     const { runMode, limitUploads, uploadLimitCount } = req.body || {};

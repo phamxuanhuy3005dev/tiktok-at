@@ -152,26 +152,53 @@ export async function runSingleProfile(
       forceUploadAll,
     );
 
-    if (uploadedCount > 0) {
+    const actualUploaded =
+      typeof uploadedCount === 'object' && uploadedCount !== null
+        ? uploadedCount.uploadedCount
+        : Number(uploadedCount) || 0;
+    const failedVideosList =
+      typeof uploadedCount === 'object' &&
+      Array.isArray(uploadedCount?.failedVideos)
+        ? uploadedCount.failedVideos
+        : [];
+
+    const expectedCount =
+      limitUploads && uploadLimitCount > 0
+        ? Math.min(videos.length, uploadLimitCount)
+        : profile.is_scheduled === 1 &&
+            profile.upload_count > 0 &&
+            !forceUploadAll
+          ? Math.min(videos.length, profile.upload_count)
+          : videos.length;
+
+    if (actualUploaded >= expectedCount && failedVideosList.length === 0) {
       db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run(
         'success',
         profile.id,
       );
       return {
         success: true,
-        uploadedCount,
+        uploadedCount: actualUploaded,
+        failedVideos: [],
         profileId: profile.id,
         profileName: profile.name,
       };
     } else {
+      const missed = expectedCount - actualUploaded;
+      const errorMsg =
+        actualUploaded === 0
+          ? 'Không có video nào được upload'
+          : `Chỉ đăng được ${actualUploaded}/${expectedCount} video (sót ${missed > 0 ? missed : failedVideosList.length} video)`;
+
       db.prepare('UPDATE profiles SET status = ? WHERE id = ?').run(
-        'no_videos',
+        'error',
         profile.id,
       );
       return {
         success: false,
-        uploadedCount: 0,
-        error: 'Không có video nào được upload',
+        uploadedCount: actualUploaded,
+        failedVideos: failedVideosList,
+        error: errorMsg,
         profileId: profile.id,
         profileName: profile.name,
       };
@@ -247,17 +274,26 @@ export async function executeBatchSession(
   const runBatchQueue = async (profilesToRun, onProfileDone) => {
     const runOne = async (profile) => {
       if (runningProfiles.has(profile.id)) return;
-      const myVideos = assignedVideosMap
+      let myVideos = assignedVideosMap
         ? assignedVideosMap[profile.id] || []
         : null;
+
+      // Filter to files that still exist on disk (especially critical for Round 2 retry!)
+      const vFolder =
+        overrideFolder ||
+        profile.video_folder ||
+        getConfig('videoFolder', UPLOADS_DIR);
+      if (myVideos && vFolder && fs.existsSync(vFolder)) {
+        myVideos = myVideos.filter((v) => fs.existsSync(path.join(vFolder, v)));
+      }
+
       if (assignedVideosMap && (!myVideos || myVideos.length === 0)) {
         console.log(
-          `[BatchSession] ${profile.name} has no videos assigned. Skipping.`,
+          `[BatchSession] ${profile.name} has no remaining videos to upload. Skipping/Completed.`,
         );
         onProfileDone(profile, {
-          success: false,
+          success: true,
           uploadedCount: 0,
-          error: 'Không được chia video nào',
         });
         return;
       }
@@ -384,8 +420,10 @@ export async function executeBatchSession(
   let finalSummaryText = '';
   if (session.round1.failed.length === 0) {
     finalSummaryText = `🎉 Tất cả ${session.totalProfiles} profile đã hoàn thành xuất sắc trong lượt 1!`;
+  } else if (finalFailed.length === 0) {
+    finalSummaryText = `🎉 Hoàn tất sau Lượt 2 (Auto-Retry)! Tất cả ${session.totalProfiles} profile đã hoàn thành đủ video.`;
   } else {
-    finalSummaryText = `📊 Hoàn tất!\n• Lượt 1: ${session.round1.completed.length}/${session.totalProfiles} thành công, ${session.round1.failed.length} lỗi.\n• Lượt retry: ${session.retry.completed.length}/${session.retry.total} thành công.\n• Tổng kết: ${totalSucceeded}/${session.totalProfiles} thành công, ${finalFailed.length} lỗi.`;
+    finalSummaryText = `⚠️ Hoàn tất!\n• Lượt 1: ${session.round1.completed.length}/${session.totalProfiles} thành công, ${session.round1.failed.length} lỗi.\n• Lượt retry: ${session.retry.completed.length}/${session.retry.total} thành công.\n• Tổng kết: ${totalSucceeded}/${session.totalProfiles} thành công, ${finalFailed.length} profile còn sót video (${finalFailed.map((f) => f.name).join(', ')}).`;
   }
 
   session.summary = {
