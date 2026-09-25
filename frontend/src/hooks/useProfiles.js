@@ -3,6 +3,7 @@ import { useCookieActions } from './useCookieActions';
 import { useCreateProfile } from './useCreateProfile';
 import { useEditProfile } from './useEditProfile';
 import { useFolderPicker } from './useFolderPicker';
+import { useFollowerActions } from './useFollowerActions';
 import { useProfileData } from './useProfileData';
 import { useProfileSelection } from './useProfileSelection';
 
@@ -194,6 +195,20 @@ const useProfiles = () => {
     handleCloseEditProfile,
   } = editProfile;
 
+  // 8. Follower counts & modal
+  const followerActions = useFollowerActions({
+    profiles,
+    selectedForRun,
+  });
+  const {
+    followersMap,
+    isFollowersModalOpen,
+    setIsFollowersModalOpen,
+    isLoadingFollowers,
+    followersModalProfiles,
+    handleCheckFollowers,
+  } = followerActions;
+
   return {
     // core data
     profiles,
@@ -215,6 +230,14 @@ const useProfiles = () => {
     startingProfiles,
     cookieModalProfileId,
     musicSearchTerms,
+
+    // followers
+    followersMap,
+    isFollowersModalOpen,
+    setIsFollowersModalOpen,
+    isLoadingFollowers,
+    followersModalProfiles,
+    handleCheckFollowers,
 
     // create profile
     isCreateProfileModalOpen,

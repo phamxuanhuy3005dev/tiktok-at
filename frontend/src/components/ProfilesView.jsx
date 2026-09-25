@@ -3,6 +3,7 @@ import BatchStatusBanner from './BatchStatusBanner';
 import CookieModal from './CookieModal';
 import CreateProfileModal from './CreateProfileModal';
 import EditProfileModal from './EditProfileModal';
+import FollowersModal from './FollowersModal';
 import ProfileCard from './ProfileCard';
 import ProfilesActionBar from './ProfilesActionBar';
 import ProfilesToolbar from './ProfilesToolbar';
@@ -97,6 +98,13 @@ const ProfilesView = ({
   updateProfileRemoveTitle,
   updateProfileNeedContentCheck,
   handleUpdateMusicSearchTerm,
+  // followers
+  followersMap = {},
+  isFollowersModalOpen = false,
+  setIsFollowersModalOpen,
+  isLoadingFollowers = false,
+  followersModalProfiles = [],
+  handleCheckFollowers,
 }) => {
   const hasSelection = (selectedForRun?.size || 0) > 0;
 
@@ -133,13 +141,30 @@ const ProfilesView = ({
           deleteSelectedProfiles={deleteSelectedProfiles}
           isLoading={isLoading}
           startAutomation={startAutomation}
+          onCheckFollowers={handleCheckFollowers}
+          isLoadingFollowers={isLoadingFollowers}
         />
       </div>
 
       {filteredProfiles.length > 0 && (
         <div className="glass profile-table">
           <div className="profile-table-head">
-            <div />
+            <label
+              className="table-check"
+              title={
+                allFilteredSelected
+                  ? 'Bỏ chọn tất cả'
+                  : `Chọn tất cả (${filteredProfiles.length})`
+              }
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <input
+                type="checkbox"
+                checked={allFilteredSelected}
+                onChange={toggleSelectAllFiltered}
+                className="checkbox checkbox--sm"
+              />
+            </label>
             <span>Profile</span>
             <span>Trạng thái</span>
             <span style={{ textAlign: 'right', paddingRight: '8px' }}>
@@ -166,6 +191,7 @@ const ProfilesView = ({
               editingValue={editingValue}
               setEditingValue={setEditingValue}
               onEdit={handleEditProfile}
+              followers={followersMap[profile.id]}
             />
           ))}
         </div>
@@ -271,6 +297,18 @@ const ProfilesView = ({
         onSaveCookies={handleSaveProfileCookies}
         onCaptureFromBrowser={handleCaptureCookiesFromBrowser}
         onLogout={handleLogoutProfile}
+      />
+
+      <FollowersModal
+        open={isFollowersModalOpen}
+        onClose={() => setIsFollowersModalOpen && setIsFollowersModalOpen(false)}
+        profiles={followersModalProfiles}
+        followersMap={followersMap}
+        isLoading={isLoadingFollowers}
+        onRefresh={() =>
+          handleCheckFollowers &&
+          handleCheckFollowers(followersModalProfiles.map((p) => p.id))
+        }
       />
     </section>
   );

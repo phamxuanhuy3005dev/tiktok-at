@@ -751,6 +751,40 @@ button {
   cursor: not-allowed;
 }
 
+.btn-followers-bulk {
+  gap: 6px;
+  padding: 0 14px;
+  height: 32px;
+  min-height: 32px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
+}
+
+.btn-followers-bulk:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.btn-followers-bulk:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn-followers-bulk:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .btn-run {
   gap: 8px;
   padding: 0 18px;

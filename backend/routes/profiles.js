@@ -8,6 +8,7 @@ import {
   rmWithRetry,
 } from '../services/system-service.js';
 import { manualBrowsers } from '../services/tracker.js';
+import { fetchProfilesFollowers } from '../services/follower-service.js';
 
 const router = express.Router();
 
@@ -287,6 +288,31 @@ router.post('/profiles/clear-trash', (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/profiles/followers — Fetch follower counts for selected profiles (in-memory, no DB write)
+router.post('/profiles/followers', async (req, res) => {
+  try {
+    const { profileIds } = req.body || {};
+    if (!Array.isArray(profileIds) || profileIds.length === 0) {
+      return res.status(400).json({ error: 'profileIds array is required' });
+    }
+
+    const placeholders = profileIds.map(() => '?').join(',');
+    const profiles = db
+      .prepare(`SELECT id, name FROM profiles WHERE id IN (${placeholders})`)
+      .all(...profileIds);
+
+    if (profiles.length === 0) {
+      return res.status(404).json({ error: 'No matching profiles found' });
+    }
+
+    const results = await fetchProfilesFollowers(profiles);
+    res.json({ results });
+  } catch (err) {
+    console.error('Error fetching followers:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch followers' });
   }
 });
 

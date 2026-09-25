@@ -32,6 +32,7 @@ const ProfileCard = React.memo(
         editingValue,
         setEditingValue,
         onEdit,
+        followers,
       },
       ref,
     ) => {
@@ -54,6 +55,7 @@ const ProfileCard = React.memo(
             editingValue={editingValue}
             setEditingValue={setEditingValue}
             onEdit={onEdit}
+            followers={followers}
           />
 
           <div className="table-status">

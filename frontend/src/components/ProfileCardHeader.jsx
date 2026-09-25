@@ -1,4 +1,4 @@
-import { Check, Edit3, Globe, X } from 'lucide-react';
+import { Check, Edit3, Globe, Users, X } from 'lucide-react';
 import React from 'react';
 
 // Identity cell of a profile row: selection checkbox, avatar, editable name.
@@ -13,6 +13,7 @@ const ProfileCardHeader = React.memo(
     editingValue,
     setEditingValue,
     onEdit,
+    followers,
   }) => (
     <>
       <label className="table-check" onClick={(e) => e.stopPropagation()}>
@@ -63,6 +64,29 @@ const ProfileCardHeader = React.memo(
         ) : (
           <div className="table-name">
             <span className="table-name-text">{profile.name}</span>
+            {followers !== undefined && followers !== null && (
+              <span
+                className="badge-followers"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  color: '#10B981',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  marginLeft: '4px',
+                  flexShrink: 0
+                }}
+                title={`Số lượng followers: ${typeof followers === 'number' ? followers.toLocaleString('vi-VN') : followers}`}
+              >
+                <Users size={11} />
+                {typeof followers === 'number' ? followers.toLocaleString('vi-VN') : followers}
+              </span>
+            )}
             <button
               type="button"
               className="icon-btn"

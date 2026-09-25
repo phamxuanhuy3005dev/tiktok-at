@@ -1,4 +1,4 @@
-import { Play, RefreshCw, RotateCcw, Search, Trash2, X } from 'lucide-react';
+import { Play, RefreshCw, RotateCcw, Search, Trash2, Users, X } from 'lucide-react';
 import React from 'react';
 
 const ProfilesActionBar = React.memo(
@@ -17,6 +17,8 @@ const ProfilesActionBar = React.memo(
     deleteSelectedProfiles,
     isLoading = false,
     startAutomation,
+    onCheckFollowers,
+    isLoadingFollowers = false,
   }) => {
     const isFiltered = groupFilter !== 'all' || searchQuery.trim() !== '';
 
@@ -78,25 +80,36 @@ const ProfilesActionBar = React.memo(
               <span>Đặt lại</span>
             </button>
           )}
-
-          {/* Select All Checkbox */}
-          {filteredProfiles.length > 0 && (
-            <label
-              className="field-label"
-              style={{ cursor: 'pointer', marginLeft: 'auto' }}
-            >
-              <input
-                type="checkbox"
-                checked={allFilteredSelected}
-                onChange={toggleSelectAllFiltered}
-                className="checkbox"
-              />
-              Chọn tất cả ({filteredProfiles.length})
-            </label>
-          )}
         </div>
 
         <div className={`glass bulk-bar${hasSelection ? ' is-active' : ''}`}>
+          {filteredProfiles.length > 0 && (
+            <>
+              <label
+                style={{
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: 600,
+                  fontSize: '0.8rem',
+                  color: 'var(--text)',
+                  userSelect: 'none',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={toggleSelectAllFiltered}
+                  className="checkbox checkbox--sm"
+                />
+                <span>Chọn tất cả ({filteredProfiles.length})</span>
+              </label>
+
+              <span className="toolbar-divider" aria-hidden="true" />
+            </>
+          )}
+
           <div className={`selection-count${hasSelection ? ' is-active' : ''}`}>
             {hasSelection
               ? `${selectedForRun.size} đã chọn`
@@ -118,6 +131,29 @@ const ProfilesActionBar = React.memo(
           >
             <Trash2 size={15} aria-hidden="true" />
             <span>Xóa đã chọn</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-followers-bulk"
+            onClick={() => onCheckFollowers && onCheckFollowers(selectedForRun)}
+            disabled={isLoadingFollowers || !hasSelection}
+            title={
+              hasSelection
+                ? `Xem số followers của ${selectedForRun.size} profile đã chọn`
+                : 'Chọn checkbox trên từng profile để xem số followers'
+            }
+          >
+            {isLoadingFollowers ? (
+              <RefreshCw
+                className="animate-spin"
+                size={14}
+                aria-hidden="true"
+              />
+            ) : (
+              <Users size={14} aria-hidden="true" />
+            )}
+            <span>Xem Followers</span>
           </button>
 
           <button
