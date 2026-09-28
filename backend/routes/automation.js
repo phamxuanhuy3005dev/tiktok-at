@@ -178,8 +178,15 @@ router.post('/open-profile', async (req, res) => {
 
     const page =
       browser.pages().length > 0 ? browser.pages()[0] : await browser.newPage();
-    page.on('framenavigated', () => {
-      syncCookies();
+    let syncTimerDebounce = null;
+    page.on('framenavigated', (frame) => {
+      // ONLY sync cookies on main frame navigations, never on iframes / Captcha challenges!
+      if (frame === page.mainFrame()) {
+        if (syncTimerDebounce) clearTimeout(syncTimerDebounce);
+        syncTimerDebounce = setTimeout(() => {
+          syncCookies();
+        }, 3000);
+      }
     });
     await page
       .goto('https://www.tiktok.com/', { waitUntil: 'domcontentloaded' })

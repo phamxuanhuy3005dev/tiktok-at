@@ -86,6 +86,7 @@ export const TRASH_DIRS = [
   'DawnGraphiteCache',
   'ShaderCache',
   'GrShaderCache',
+  'GPUPersistentCache',
   'Session Storage',
   'component_crx_cache',
   'extensions_crx_cache',

@@ -8,6 +8,7 @@ export const STATUS_LABELS = {
   logging_in: 'Đang đăng nhập',
   changing_avatar: 'Đang đổi avatar',
   adding_favorite_music: 'Đang thêm nhạc',
+  captcha_required: 'Cần giải Captcha',
   success: 'Thành công',
   error: 'Lỗi',
   no_videos: 'Không có video',
@@ -23,6 +24,8 @@ export const getStatusColor = (status = 'idle') => {
       return 'var(--status-avatar)';
     case 'adding_favorite_music':
       return 'var(--status-music-active)';
+    case 'captcha_required':
+      return '#f59e0b';
     case 'success':
       return 'var(--success)';
     case 'error':

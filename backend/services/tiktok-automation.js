@@ -280,17 +280,168 @@ export async function fillScheduleInput(page, inputMeta, value, label, log) {
   await page.waitForTimeout(300);
 }
 
+export async function detectCaptcha(page) {
+  if (!page) return false;
+  try {
+    if (page.isClosed()) return false;
+
+    // 1. Check child frames for verification/captcha URLs
+    const frames = page.frames();
+    for (const frame of frames) {
+      if (frame === page.mainFrame()) continue;
+      const url = frame.url() || '';
+      if (
+        url.includes('verify.tiktok.com') ||
+        url.includes('verify.byteoversea.com') ||
+        url.includes('verify.snssdk.com') ||
+        url.includes('/captcha/') ||
+        url.includes('security/captcha')
+      ) {
+        return true;
+      }
+    }
+
+    // 2. Check for visible captcha DOM containers on page
+    const captchaSelector = [
+      'iframe[src*="verify"]',
+      'iframe[src*="captcha"]',
+      '#captcha-verify-container',
+      '#captcha_container',
+      '.captcha_verify_container',
+      '.captcha-verify-container',
+      '.captcha_verify_overlay',
+      '[class*="secsdk-captcha"]',
+      '[id*="secsdk-captcha"]',
+      'div[class*="captcha-verify-box"]',
+      'div[class*="verify-wrap"]',
+      'div[class*="verify-bar"]',
+    ].join(', ');
+
+    const count = await page.locator(captchaSelector).count().catch(() => 0);
+    if (count > 0) {
+      const elements = page.locator(captchaSelector);
+      for (let i = 0; i < Math.min(count, 5); i++) {
+        if (await elements.nth(i).isVisible().catch(() => false)) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Fallback text detection inside modal / verify containers
+    const hasText = await page
+      .evaluate(() => {
+        const bodyText = document.body ? document.body.innerText : '';
+        if (!bodyText) return false;
+        const lower = bodyText.toLowerCase();
+        const hasKeywords =
+          lower.includes('verify to continue') ||
+          lower.includes('drag the slider') ||
+          lower.includes('select 2 objects') ||
+          lower.includes('which of these objects') ||
+          lower.includes('xác minh để tiếp tục') ||
+          lower.includes('kéo thanh trượt') ||
+          lower.includes('rotate the object');
+
+        if (!hasKeywords) return false;
+
+        return Boolean(
+          document.querySelector(
+            'iframe[src*="verify"], iframe[src*="captcha"], [class*="captcha"], [id*="captcha"], [class*="modal"]',
+          ),
+        );
+      })
+      .catch(() => false);
+
+    return Boolean(hasText);
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function waitForCaptchaResolution(
+  page,
+  log,
+  profile,
+  maxWaitSeconds = 180,
+) {
+  if (!page || page.isClosed()) return false;
+
+  const isCaptcha = await detectCaptcha(page);
+  if (!isCaptcha) return true;
+
+  if (log) {
+    log(
+      `[CAPTCHA DETECTED] Phát hiện yêu cầu xác minh Captcha từ TikTok! Tạm dừng và chờ bạn giải trên trình duyệt (tối đa ${maxWaitSeconds}s)...`,
+    );
+  }
+
+  // Update profile status in database so the UI displays warning
+  if (profile?.id) {
+    try {
+      db.prepare("UPDATE profiles SET status = 'captcha_required' WHERE id = ?").run(
+        profile.id,
+      );
+    } catch (_) {}
+  }
+
+  // Bring browser window to front so the user sees the Captcha immediately
+  try {
+    await page.bringToFront().catch(() => {});
+  } catch (_) {}
+
+  const startTime = Date.now();
+  const maxWaitMs = maxWaitSeconds * 1000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    if (page.isClosed()) {
+      throw new Error('Trình duyệt đã bị đóng trong khi chờ giải Captcha.');
+    }
+
+    await page.waitForTimeout(2000);
+
+    const stillPresent = await detectCaptcha(page);
+    if (!stillPresent) {
+      if (log) {
+        log(
+          '[CAPTCHA SOLVED] Captcha đã được giải quyết thành công! Đang tiếp tục tiến trình...',
+        );
+      }
+      // Restore status to uploading
+      if (profile?.id) {
+        try {
+          db.prepare("UPDATE profiles SET status = 'uploading' WHERE id = ?").run(
+            profile.id,
+          );
+        } catch (_) {}
+      }
+      // Wait for UI transition after captcha is dismissed
+      await page.waitForTimeout(2500);
+      return true;
+    }
+  }
+
+  if (log) {
+    log(`[CAPTCHA TIMEOUT] Quá thời gian chờ giải Captcha (${maxWaitSeconds}s).`);
+  }
+  throw new Error(`Quá thời gian chờ giải Captcha (${maxWaitSeconds}s).`);
+}
+
 export const dismissPopups = async (page) => {
   if (!page) return false;
 
+  // IMPORTANT: Do NOT dismiss popups or click buttons if Captcha is active!
+  if (await detectCaptcha(page)) {
+    return false;
+  }
+
   const modalSelectors = [
-    'div[role="dialog"]',
-    'div.TUXModal:not(.TUXModal-overlay)',
-    'div[class*="common-modal"]:not([class*="overlay"])',
-    'div[class*="modal"]:not([class*="overlay"])',
-    'div[class*="Modal"]:not([class*="overlay"])',
-    'div[class*="portal"]',
-    'div[class*="dialog"]',
+    'div[role="dialog"]:not([class*="captcha"]):not([id*="captcha"])',
+    'div.TUXModal:not(.TUXModal-overlay):not([class*="captcha"]):not([id*="captcha"])',
+    'div[class*="common-modal"]:not([class*="overlay"]):not([class*="captcha"])',
+    'div[class*="modal"]:not([class*="overlay"]):not([class*="captcha"]):not([id*="captcha"])',
+    'div[class*="Modal"]:not([class*="overlay"]):not([class*="captcha"])',
+    'div[class*="portal"]:not([class*="captcha"]):not([id*="captcha"])',
+    'div[class*="dialog"]:not([class*="captcha"])',
   ];
 
   for (const modalSel of modalSelectors) {
@@ -301,6 +452,19 @@ export const dismissPopups = async (page) => {
           if (!(await modal.isVisible())) continue;
           const text = await modal.innerText().catch(() => '');
           if (!text.trim()) continue;
+
+          // Never dismiss Captcha verification modals
+          const lowerText = text.toLowerCase();
+          if (
+            lowerText.includes('verify') ||
+            lowerText.includes('xác minh') ||
+            lowerText.includes('puzzle') ||
+            lowerText.includes('slider') ||
+            lowerText.includes('trượt') ||
+            lowerText.includes('object')
+          ) {
+            continue;
+          }
 
           // 1. "Turn on automatic content checks" popup -> Always click Cancel
           if (
@@ -396,6 +560,10 @@ export const dismissPopups = async (page) => {
 
 export async function dismissOnboardingModals(page, log) {
   try {
+    if (!page) return;
+    if (await detectCaptcha(page)) {
+      return;
+    }
     const detection = await page.evaluate(() => {
       const found = [];
       const tuxModal = document.querySelector('div.TUXModal');
@@ -759,6 +927,10 @@ export async function uploadVideo(
           log(`Active polling for upload components...`);
           // Smart polling loop: check every 1s for up to 30s
           for (let poll = 0; poll < 30; poll++) {
+            if (await detectCaptcha(page)) {
+              await waitForCaptchaResolution(page, log, profile);
+            }
+
             const [hasInput, hasButton, isLogin] = await Promise.all([
               page.$('input[type="file"]'),
               page.$(
@@ -899,6 +1071,9 @@ export async function uploadVideo(
           for (let i = 0; i < 600; i++) {
             // max 20 phÃºt
             await page.waitForTimeout(2000);
+            if (await detectCaptcha(page)) {
+              await waitForCaptchaResolution(page, log, profile);
+            }
             await dismissPopups(page);
             await dismissOnboardingModals(page, log);
             await pausePreviewVideos(page);
@@ -1623,6 +1798,9 @@ export async function uploadVideo(
       page.on('response', responseHandler);
 
       for (let clickAttempt = 0; clickAttempt < 10; clickAttempt++) {
+        if (await detectCaptcha(page)) {
+          await waitForCaptchaResolution(page, log, profile);
+        }
         await dismissPopups(page);
 
         const postSelectors = [
@@ -1691,8 +1869,17 @@ export async function uploadVideo(
             // Strategy B: Evaluate click fallback
             await targetBtn.evaluate((node) => node.click()).catch(() => null);
           }
-          await dismissPopups(page);
+          await page.waitForTimeout(1000);
+          if (await detectCaptcha(page)) {
+            await waitForCaptchaResolution(page, log, profile);
+          } else {
+            await dismissPopups(page);
+          }
         } else {
+          if (await detectCaptcha(page)) {
+            await waitForCaptchaResolution(page, log, profile);
+            continue;
+          }
           log(
             `Target Post/Schedule button not found or disabled on attempt ${clickAttempt + 1}.`,
           );
@@ -1703,6 +1890,10 @@ export async function uploadVideo(
         // Success detection polling (Wait up to 15s per attempt)
         for (let poll = 0; poll < 3; poll++) {
           await page.waitForTimeout(5000);
+
+          if (await detectCaptcha(page)) {
+            await waitForCaptchaResolution(page, log, profile);
+          }
 
           const postBtnGone = !(await page.$(
             'button:has-text("Post"), button:has-text("Schedule"), button:has-text("Đăng"), button:has-text("Lên lịch")',
@@ -1867,6 +2058,10 @@ export async function runTikTokLogin(profile) {
     });
     await tiktokPage.waitForTimeout(3000);
 
+    if (await detectCaptcha(tiktokPage)) {
+      await waitForCaptchaResolution(tiktokPage, log, profile);
+    }
+
     const currentUrl = tiktokPage.url();
     log('Kiá»ƒm tra tráº¡ng thÃ¡i Ä‘Äƒng nháº­p qua avatar...');
     const isLoggedIn = await tiktokPage
@@ -1962,6 +2157,9 @@ export async function addFavoriteMusic(profile, searchTerm) {
     }
 
     await page.waitForTimeout(5000);
+    if (await detectCaptcha(page)) {
+      await waitForCaptchaResolution(page, log, profile);
+    }
     await dismissPopups(page);
     await dismissOnboardingModals(page, log);
 

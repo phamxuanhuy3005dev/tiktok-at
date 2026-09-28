@@ -14,7 +14,8 @@ const ProfileCardActions = React.memo(
     onOpenCookieModal,
   }) => {
     const hasCookies = Boolean(profile.cookies && profile.cookies.trim());
-    const uploading = profile.status === 'uploading' || isStarting;
+    const isCaptcha = profile.status === 'captcha_required';
+    const uploading = profile.status === 'uploading' || isCaptcha || isStarting;
     const isBrowserOpen = Boolean(profile.is_browser_open);
 
     const browserTooltip = isTogglingBrowser
@@ -60,9 +61,13 @@ const ProfileCardActions = React.memo(
           onClick={() => onStart(profile.id)}
           disabled={uploading}
           title={
-            uploading ? 'Đang xử lý / upload video...' : 'Bắt đầu upload video'
+            isCaptcha
+              ? 'Đang chờ giải Captcha trên trình duyệt...'
+              : uploading
+                ? 'Đang xử lý / upload video...'
+                : 'Bắt đầu upload video'
           }
-          color={uploading ? 'var(--accent)' : 'var(--text)'}
+          color={isCaptcha ? '#f59e0b' : uploading ? 'var(--accent)' : 'var(--text)'}
           bg={uploading ? 'transparent' : 'rgba(255, 255, 255, 0.05)'}
           border="var(--border)"
           size="32px"

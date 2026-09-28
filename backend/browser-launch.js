@@ -3,37 +3,20 @@
 
 export const PERFORMANCE_CHROME_ARGS = [
   '--disable-blink-features=AutomationControlled',
-  // Memory and disk cache limits for low RAM/disk machines
-  '--js-flags=--max-old-space-size=512',
-  '--disk-cache-size=33554432',
-  '--media-cache-size=33554432',
-  // Limit renderer process count to save RAM on low-spec hardware
-  '--renderer-process-limit=3',
-  '--disable-dev-shm-usage',
-  // Prevent background throttling during automated uploads
-  '--disable-background-timer-throttling',
-  '--disable-renderer-backgrounding',
-  '--disable-ipc-flooding-protection',
-  // Disable unnecessary background processes and network requests
-  '--disable-background-networking',
-  '--disable-component-update',
-  '--disable-domain-reliability',
-  '--disable-sync',
-  '--disable-client-side-phishing-detection',
-  '--disable-default-apps',
-  '--disable-hang-monitor',
-  '--disable-popup-blocking',
-  '--disable-prompt-on-repost',
-  '--no-pings',
-  '--disable-field-trial-config',
-  // Disable metrics and crash reporting
-  '--metrics-recording-only',
-  '--disable-breakpad',
   '--no-first-run',
   '--no-default-browser-check',
   '--password-store=basic',
-  // Disable heavy unneeded features (retains WebGL/HW accel for video editor)
-  '--disable-features=Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion,InterestFeedContentSuggestions',
+  // Smooth rendering & prevent MPO / DWM swapchain flickering on Windows & AMD GPUs
+  '--disable-direct-composition-video-overlays',
+  '--disable-features=UseMultiplaneOverlayForHardwareVideo',
+  '--enable-features=PaintHolding',
+  // Disable crash reporting, telemetry & background sync noise
+  '--metrics-recording-only',
+  '--disable-breakpad',
+  '--disable-prompt-on-repost',
+  '--disable-sync',
+  '--disable-default-apps',
+  '--disable-component-update',
 ];
 
 /**

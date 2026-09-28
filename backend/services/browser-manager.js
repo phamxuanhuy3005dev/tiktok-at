@@ -171,6 +171,29 @@ export async function closeProfileBrowser(profileId, profileName) {
 }
 
 /**
+ * Clean up transient GPU shader caches (GPUCache, GrShaderCache, ShaderCache, Dawn)
+ * to prevent corrupted shader binaries from causing WebGL context hangs and Captcha loading loops.
+ */
+export function cleanProfileGpuCache(userDataDir) {
+  if (!userDataDir || !fs.existsSync(userDataDir)) return;
+  const staleDirs = [
+    path.join(userDataDir, 'Default', 'GPUCache'),
+    path.join(userDataDir, 'Default', 'DawnGraphiteCache'),
+    path.join(userDataDir, 'Default', 'DawnWebGPUCache'),
+    path.join(userDataDir, 'GrShaderCache'),
+    path.join(userDataDir, 'ShaderCache'),
+    path.join(userDataDir, 'GPUPersistentCache'),
+  ];
+  for (const dir of staleDirs) {
+    try {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    } catch (_) {}
+  }
+}
+
+/**
  * Ensure the profile is 100% clean and ready for a new persistent context launch.
  * Closes any manual browsers, stops any ongoing login checks, and clears stale locks.
  */
@@ -197,6 +220,136 @@ export async function ensureProfileReadyForLaunch(profileId, profileName) {
   // 3. Clean up lock files and lingering processes
   const userDataDir = path.join(PROFILES_DIR, profileName);
   await releaseProfileLocks(userDataDir, profileName);
+
+  // 4. Purge stale GPU/shader caches to ensure clean WebGL 3D Captcha rendering
+  cleanProfileGpuCache(userDataDir);
+}
+
+/**
+ * Attach Captcha Stabilization to a browser context.
+ * Prevents ByteDance SecSDK / webmssdk from entering an infinite recursive loop
+ * when endpoints like /api/v1/user/profile/upload/ return status_code: 3008017 (BdTuring).
+ * Holding concurrent requests keeps the Captcha modal static and solvable without screen flickering.
+ */
+export async function attachCaptchaStabilizer(context, profile = {}) {
+  if (!context || typeof context.route !== 'function') return;
+
+  const profileName = profile?.name || 'unknown';
+  let captchaActive = false;
+  let pendingRoutes = [];
+  let safetyTimeout = null;
+
+  const releasePendingRoutes = () => {
+    captchaActive = false;
+    if (safetyTimeout) {
+      clearTimeout(safetyTimeout);
+      safetyTimeout = null;
+    }
+    if (pendingRoutes.length > 0) {
+      console.log(
+        `[${profileName}] [CaptchaStabilizer] Releasing ${pendingRoutes.length} held requests...`,
+      );
+      const routes = [...pendingRoutes];
+      pendingRoutes = [];
+      for (const r of routes) {
+        r.continue().catch(() => {});
+      }
+    }
+  };
+
+  // Intercept profile/upload requests to stop recursive loop
+  try {
+    await context.route('**/api/v1/user/profile/upload/**', async (route) => {
+      if (captchaActive) {
+        pendingRoutes.push(route);
+        return;
+      }
+
+      try {
+        const response = await route.fetch();
+        const body = await response.text();
+
+        if (body.includes('3008017') || body.includes('BdTuring')) {
+          captchaActive = true;
+          console.log(
+            `[${profileName}] [CaptchaStabilizer] BdTuring challenge detected. Stabilizer active.`,
+          );
+          if (safetyTimeout) clearTimeout(safetyTimeout);
+          safetyTimeout = setTimeout(() => {
+            releasePendingRoutes();
+          }, 90000); // 90 seconds safety timeout
+        } else {
+          captchaActive = false;
+        }
+
+        await route.fulfill({ response });
+      } catch (e) {
+        route.continue().catch(() => {});
+      }
+    });
+  } catch (e) {
+    console.warn(`[${profileName}] Failed to attach route stabilizer:`, e?.message);
+  }
+
+  // Release when Captcha verification API succeeds
+  if (typeof context.on === 'function') {
+    context.on('response', async (res) => {
+      const u = res.url();
+      if (u.includes('captcha/verify')) {
+        try {
+          const data = await res.json();
+          if (
+            data.code === 200 ||
+            data.message === 'success' ||
+            data.result === 'success'
+          ) {
+            console.log(
+              `[${profileName}] [CaptchaStabilizer] Captcha solved successfully.`,
+            );
+            setTimeout(releasePendingRoutes, 600);
+          }
+        } catch (_) {}
+      }
+    });
+
+    // Cleanup when context closes
+    context.on('close', () => {
+      releasePendingRoutes();
+    });
+  }
+
+  // Release when Captcha modal is removed from DOM (user solved or dismissed)
+  if (
+    typeof context.exposeFunction === 'function' &&
+    typeof context.addInitScript === 'function'
+  ) {
+    try {
+      await context.exposeFunction('__notifyTikTokCaptchaDismissed', () => {
+        if (captchaActive) {
+          console.log(
+            `[${profileName}] [CaptchaStabilizer] Captcha closed or dismissed.`,
+          );
+          releasePendingRoutes();
+        }
+      });
+
+      await context.addInitScript(() => {
+        if (window !== window.top) return;
+        let hadCaptcha = false;
+        setInterval(() => {
+          const el = document.querySelector(
+            '#captcha_container, .captcha-verify-container, #captcha-verify-container',
+          );
+          if (el) {
+            hadCaptcha = true;
+          } else if (hadCaptcha) {
+            hadCaptcha = false;
+            window.__notifyTikTokCaptchaDismissed?.();
+          }
+        }, 500);
+      });
+    } catch (_) {}
+  }
 }
 
 /**
@@ -216,10 +369,12 @@ export async function launchPersistentContextSafe(
   await ensureProfileReadyForLaunch(profileId, profileName);
 
   try {
-    return await chromiumInstance.launchPersistentContext(
+    const context = await chromiumInstance.launchPersistentContext(
       userDataDir,
       browserOptions,
     );
+    await attachCaptchaStabilizer(context, profile);
+    return context;
   } catch (err) {
     const msg = String(err?.message || '');
     const isLockError =
@@ -234,10 +389,12 @@ export async function launchPersistentContextSafe(
       );
       await releaseProfileLocks(userDataDir, profileName);
       await new Promise((r) => setTimeout(r, 400));
-      return await chromiumInstance.launchPersistentContext(
+      const context = await chromiumInstance.launchPersistentContext(
         userDataDir,
         browserOptions,
       );
+      await attachCaptchaStabilizer(context, profile);
+      return context;
     }
 
     throw err;

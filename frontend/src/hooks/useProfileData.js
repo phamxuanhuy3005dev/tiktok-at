@@ -58,7 +58,8 @@ export const useProfileData = ({
           p.status === 'uploading' ||
           p.status === 'logging_in' ||
           p.status === 'changing_avatar' ||
-          p.status === 'adding_favorite_music',
+          p.status === 'adding_favorite_music' ||
+          p.status === 'captcha_required',
       ) || Boolean(batchStatus);
   }, [profiles, batchStatus]);
 

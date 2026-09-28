@@ -13,7 +13,9 @@ test('buildBrowserLaunchOptions: base shape matching feature/change_music_auto',
   assert.ok(
     opts.args.includes('--disable-blink-features=AutomationControlled'),
   );
-  assert.ok(opts.args.includes('--js-flags=--max-old-space-size=512'));
+  assert.ok(
+    opts.args.includes('--disable-direct-composition-video-overlays'),
+  );
   assert.equal(opts.chromiumSandbox, undefined);
   assert.equal(opts.ignoreDefaultArgs, undefined);
   assert.equal(opts.viewport, undefined);

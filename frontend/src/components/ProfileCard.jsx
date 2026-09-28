@@ -38,7 +38,10 @@ const ProfileCard = React.memo(
     ) => {
       const statusColor = getStatusColor(profile.status);
       const statusLabel = STATUS_LABELS[profile.status] || STATUS_LABELS.idle;
-      const isActive = profile.status === 'uploading' || isLoggingIn;
+      const isActive =
+        profile.status === 'uploading' ||
+        profile.status === 'captcha_required' ||
+        isLoggingIn;
 
       return (
         <div
