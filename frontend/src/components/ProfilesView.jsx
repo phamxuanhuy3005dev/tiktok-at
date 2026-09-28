@@ -80,6 +80,16 @@ const ProfilesView = ({
   setNewProfileSetMusic,
   newProfileNeedContentCheck,
   setNewProfileNeedContentCheck,
+  newProfileAccountId,
+  setNewProfileAccountId,
+  newProfilePass,
+  setNewProfilePass,
+  newProfileEmail,
+  setNewProfileEmail,
+  newProfilePassEmail,
+  setNewProfilePassEmail,
+  newProfileMailAo,
+  setNewProfileMailAo,
   closeCreateProfileModal,
   addProfile,
   handleSelectFolderForCreateProfile,
@@ -97,6 +107,7 @@ const ProfilesView = ({
   updateProfileUploadCount,
   updateProfileRemoveTitle,
   updateProfileNeedContentCheck,
+  updateProfileCredentials,
   handleUpdateMusicSearchTerm,
   // followers
   followersMap = {},
@@ -258,6 +269,16 @@ const ProfilesView = ({
         setNewProfileSetMusic={setNewProfileSetMusic}
         newProfileNeedContentCheck={newProfileNeedContentCheck}
         setNewProfileNeedContentCheck={setNewProfileNeedContentCheck}
+        newProfileAccountId={newProfileAccountId}
+        setNewProfileAccountId={setNewProfileAccountId}
+        newProfilePass={newProfilePass}
+        setNewProfilePass={setNewProfilePass}
+        newProfileEmail={newProfileEmail}
+        setNewProfileEmail={setNewProfileEmail}
+        newProfilePassEmail={newProfilePassEmail}
+        setNewProfilePassEmail={setNewProfilePassEmail}
+        newProfileMailAo={newProfileMailAo}
+        setNewProfileMailAo={setNewProfileMailAo}
         groups={groups}
         isCreatingProfile={isCreatingProfile}
         isSelectingFolder={isSelectingFolder}
@@ -281,6 +302,7 @@ const ProfilesView = ({
         onUpdateUploadCount={updateProfileUploadCount}
         onUpdateRemoveTitle={updateProfileRemoveTitle}
         onUpdateNeedContentCheck={updateProfileNeedContentCheck}
+        onUpdateCredentials={updateProfileCredentials}
         musicSearchTerm={
           editingProfileId ? musicSearchTerms[editingProfileId] || '' : ''
         }

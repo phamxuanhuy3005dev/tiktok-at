@@ -62,45 +62,71 @@ const ProfileCardHeader = React.memo(
             </button>
           </div>
         ) : (
-          <div className="table-name">
-            <span className="table-name-text">{profile.name}</span>
-            {followers !== undefined && followers !== null && (
-              <span
-                className="badge-followers"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '2px 7px',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: 'rgba(16, 185, 129, 0.12)',
-                  color: '#10B981',
-                  border: '1px solid rgba(16, 185, 129, 0.25)',
-                  marginLeft: '4px',
-                  flexShrink: 0
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
+            <div className="table-name">
+              <span className="table-name-text">{profile.name}</span>
+              {followers !== undefined && followers !== null && (
+                <span
+                  className="badge-followers"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    color: '#10B981',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    marginLeft: '4px',
+                    flexShrink: 0,
+                  }}
+                  title={`Số lượng followers: ${typeof followers === 'number' ? followers.toLocaleString('vi-VN') : followers}`}
+                >
+                  <Users size={11} />
+                  {typeof followers === 'number'
+                    ? followers.toLocaleString('vi-VN')
+                    : followers}
+                </span>
+              )}
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingId(profile.id);
+                  setEditingValue(profile.name);
                 }}
-                title={`Số lượng followers: ${typeof followers === 'number' ? followers.toLocaleString('vi-VN') : followers}`}
+                data-tooltip="Sửa tên"
+                aria-label="Sửa tên profile"
+                style={{ opacity: 0.5 }}
               >
-                <Users size={11} />
-                {typeof followers === 'number' ? followers.toLocaleString('vi-VN') : followers}
+                <Edit3 size={13} />
+              </button>
+            </div>
+            {(profile.account_id || profile.email) && (
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  color: 'var(--text-muted)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '220px',
+                  marginTop: '1px',
+                }}
+                title={
+                  profile.account_id && profile.email
+                    ? `ID: ${profile.account_id} | Email: ${profile.email}`
+                    : profile.account_id
+                      ? `ID: ${profile.account_id}`
+                      : `Email: ${profile.email}`
+                }
+              >
+                {profile.account_id ? `@${profile.account_id}` : profile.email}
               </span>
             )}
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingId(profile.id);
-                setEditingValue(profile.name);
-              }}
-              data-tooltip="Sửa tên"
-              aria-label="Sửa tên profile"
-              style={{ opacity: 0.5 }}
-            >
-              <Edit3 size={13} />
-            </button>
           </div>
         )}
       </div>

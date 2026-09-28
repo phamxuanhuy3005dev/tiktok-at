@@ -38,6 +38,7 @@ export function createProfileRecord(
     pass,
     email,
     pass_email,
+    mail_ao,
     cookies,
   },
 ) {
@@ -135,6 +136,10 @@ export function createProfileRecord(
     if (cols.has('pass_email')) {
       fields.push('pass_email');
       values.push(normalizeOptionalText(pass_email));
+    }
+    if (cols.has('mail_ao')) {
+      fields.push('mail_ao');
+      values.push(normalizeOptionalText(mail_ao));
     }
     if (cols.has('cookies')) {
       fields.push('cookies');

@@ -238,6 +238,7 @@ test('createProfileRecord stores credentials and cookies when provided', () => {
         ALTER TABLE profiles ADD COLUMN pass TEXT;
         ALTER TABLE profiles ADD COLUMN email TEXT;
         ALTER TABLE profiles ADD COLUMN pass_email TEXT;
+        ALTER TABLE profiles ADD COLUMN mail_ao TEXT;
         ALTER TABLE profiles ADD COLUMN cookies TEXT;
     `);
 
@@ -248,6 +249,7 @@ test('createProfileRecord stores credentials and cookies when provided', () => {
     pass: 'tiktok_pass_1',
     email: 'user@hotmail.com',
     pass_email: 'mail_pass_1',
+    mail_ao: 'backup@gmail.com',
     cookies: '[{"name":"sessionid","value":"123"}]',
   });
 
@@ -256,5 +258,6 @@ test('createProfileRecord stores credentials and cookies when provided', () => {
   assert.equal(profile.pass, 'tiktok_pass_1');
   assert.equal(profile.email, 'user@hotmail.com');
   assert.equal(profile.pass_email, 'mail_pass_1');
+  assert.equal(profile.mail_ao, 'backup@gmail.com');
   assert.equal(profile.cookies, '[{"name":"sessionid","value":"123"}]');
 });

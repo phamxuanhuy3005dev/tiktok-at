@@ -1,13 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Eye,
+  EyeOff,
   FolderOpen,
   Music,
+  Save,
   Search,
   ShieldCheck,
   Trash2,
+  User,
   Video,
   X,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { getStatusColor, getStatusLabel } from '../status';
 
 const EditProfileModal = ({
@@ -25,10 +30,49 @@ const EditProfileModal = ({
   onUpdateUploadCount,
   onUpdateRemoveTitle,
   onUpdateNeedContentCheck,
+  onUpdateCredentials,
   musicSearchTerm,
   onUpdateMusicSearchTerm,
 }) => {
   if (!profile) return null;
+
+  const [accountId, setAccountId] = useState(profile.account_id || '');
+  const [pass, setPass] = useState(profile.pass || '');
+  const [email, setEmail] = useState(profile.email || '');
+  const [passEmail, setPassEmail] = useState(profile.pass_email || '');
+  const [mailAo, setMailAo] = useState(profile.mail_ao || '');
+  const [showPass, setShowPass] = useState(false);
+  const [showPassEmail, setShowPassEmail] = useState(false);
+  const [isCredsChanged, setIsCredsChanged] = useState(false);
+
+  useEffect(() => {
+    setAccountId(profile.account_id || '');
+    setPass(profile.pass || '');
+    setEmail(profile.email || '');
+    setPassEmail(profile.pass_email || '');
+    setMailAo(profile.mail_ao || '');
+    setIsCredsChanged(false);
+  }, [
+    profile.id,
+    profile.account_id,
+    profile.pass,
+    profile.email,
+    profile.pass_email,
+    profile.mail_ao,
+  ]);
+
+  const handleSaveCredentials = () => {
+    if (onUpdateCredentials) {
+      onUpdateCredentials(profile.id, {
+        account_id: accountId.trim() || null,
+        pass: pass.trim() || null,
+        email: email.trim() || null,
+        pass_email: passEmail.trim() || null,
+        mail_ao: mailAo.trim() || null,
+      });
+      setIsCredsChanged(false);
+    }
+  };
 
   const handleBackdropClick = (e) => {
     onClose();
@@ -84,6 +128,257 @@ const EditProfileModal = ({
                 paddingRight: '4px',
               }}
             >
+              {/* Account Credentials */}
+              <div
+                style={{
+                  marginBottom: '20px',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  background: 'var(--surface-2, rgba(255, 255, 255, 0.04))',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div
+                    className="field-title"
+                    style={{
+                      marginBottom: 0,
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <User size={15} color="var(--primary)" />
+                    Thông Tin Tài Khoản
+                  </div>
+                  {isCredsChanged && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleSaveCredentials}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '0.72rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <Save size={12} />
+                      Lưu thông tin
+                    </button>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '10px',
+                  }}
+                >
+                  {/* Account ID / Username */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Account ID / Username
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: user_tiktok_01"
+                      value={accountId}
+                      onChange={(e) => {
+                        setAccountId(e.target.value);
+                        setIsCredsChanged(true);
+                      }}
+                      onBlur={handleSaveCredentials}
+                    />
+                  </div>
+
+                  {/* Password TikTok */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mật khẩu TikTok
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPass ? 'text' : 'password'}
+                        className="input"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '7px 30px 7px 10px',
+                          width: '100%',
+                        }}
+                        placeholder="Mật khẩu TikTok"
+                        value={pass}
+                        onChange={(e) => {
+                          setPass(e.target.value);
+                          setIsCredsChanged(true);
+                        }}
+                        onBlur={handleSaveCredentials}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        aria-label="Hiện/ẩn mật khẩu TikTok"
+                      >
+                        {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Email
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: user@hotmail.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setIsCredsChanged(true);
+                      }}
+                      onBlur={handleSaveCredentials}
+                    />
+                  </div>
+
+                  {/* Password Email */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mật khẩu Email
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPassEmail ? 'text' : 'password'}
+                        className="input"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '7px 30px 7px 10px',
+                          width: '100%',
+                        }}
+                        placeholder="Mật khẩu Email"
+                        value={passEmail}
+                        onChange={(e) => {
+                          setPassEmail(e.target.value);
+                          setIsCredsChanged(true);
+                        }}
+                        onBlur={handleSaveCredentials}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassEmail(!showPassEmail)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        aria-label="Hiện/ẩn mật khẩu Email"
+                      >
+                        {showPassEmail ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mail ảo */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mail ảo / Mail phụ
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: backup_mail@gmail.com"
+                      value={mailAo}
+                      onChange={(e) => {
+                        setMailAo(e.target.value);
+                        setIsCredsChanged(true);
+                      }}
+                      onBlur={handleSaveCredentials}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Group */}
               <div style={{ marginBottom: '20px' }}>
                 <div className="field-title">

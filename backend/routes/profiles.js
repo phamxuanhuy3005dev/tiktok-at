@@ -84,6 +84,7 @@ router.patch('/profiles/:id', (req, res) => {
       'pass',
       'email',
       'pass_email',
+      'mail_ao',
     ];
 
     const updates = [];
@@ -154,6 +155,7 @@ router.put('/profiles/:id', (req, res) => {
       pass,
       email,
       pass_email,
+      mail_ao,
     } = req.body;
 
     db.prepare(
@@ -175,7 +177,8 @@ router.put('/profiles/:id', (req, res) => {
                 account_id = COALESCE(?, account_id),
                 pass = COALESCE(?, pass),
                 email = COALESCE(?, email),
-                pass_email = COALESCE(?, pass_email)
+                pass_email = COALESCE(?, pass_email),
+                mail_ao = COALESCE(?, mail_ao)
             WHERE id = ?
         `,
     ).run(
@@ -202,6 +205,7 @@ router.put('/profiles/:id', (req, res) => {
       pass,
       email,
       pass_email,
+      mail_ao,
       req.params.id,
     );
 

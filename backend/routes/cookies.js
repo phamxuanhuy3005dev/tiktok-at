@@ -239,7 +239,20 @@ router.post('/profiles/:id/save-session-cookies', async (req, res) => {
 router.get('/profiles/export-cookies-json', (req, res) => {
   try {
     const { ids } = req.query;
-    let query = 'SELECT id, name, cookies, group_id FROM profiles';
+    const tableInfo = db.prepare('PRAGMA table_info(profiles)').all();
+    const cols = new Set(tableInfo.map((c) => c.name));
+    const credFields = [
+      'account_id',
+      'pass',
+      'email',
+      'pass_email',
+      'mail_ao',
+    ].filter((c) => cols.has(c));
+
+    let selectCols = ['id', 'name', 'cookies', 'group_id', ...credFields].join(
+      ', ',
+    );
+    let query = `SELECT ${selectCols} FROM profiles`;
     let params = [];
     if (ids && ids.trim()) {
       const idList = ids
@@ -268,6 +281,11 @@ router.get('/profiles/export-cookies-json', (req, res) => {
       return {
         name: p.name,
         group: groupMap.get(p.group_id) || '',
+        account_id: p.account_id || '',
+        pass: p.pass || '',
+        email: p.email || '',
+        pass_email: p.pass_email || '',
+        mail_ao: p.mail_ao || '',
         cookies: cookieObj,
       };
     });
@@ -290,6 +308,9 @@ export function importCookiesJsonRecords(database, items) {
   }
 
   const results = { updated: 0, created: 0, errors: [] };
+  const tableInfo = database.prepare('PRAGMA table_info(profiles)').all();
+  const existingCols = new Set(tableInfo.map((c) => c.name));
+
   const existingProfiles = database
     .prepare('SELECT id, name, group_id, cookies FROM profiles')
     .all();
@@ -309,6 +330,23 @@ export function importCookiesJsonRecords(database, items) {
       results.errors.push('Bỏ qua dòng không có tên profile');
       continue;
     }
+
+    const account_id =
+      item.account_id ?? item.accountId ?? item.username ?? null;
+    const pass = item.pass ?? item.password ?? null;
+    const email = item.email ?? item.mail ?? null;
+    const pass_email =
+      item.pass_email ??
+      item.passEmail ??
+      item.password_email ??
+      item.passwordEmail ??
+      null;
+    const mail_ao =
+      item.mail_ao ??
+      item.mailAo ??
+      item.backup_email ??
+      item.backupEmail ??
+      null;
 
     let cookieStr = null;
     if (item.cookies !== undefined && item.cookies !== null) {
@@ -384,6 +422,27 @@ export function importCookiesJsonRecords(database, items) {
         updates.push('group_id = ?');
         params.push(targetGroupId);
       }
+      if (account_id !== null && existingCols.has('account_id')) {
+        updates.push('account_id = ?');
+        params.push(String(account_id).trim() || null);
+      }
+      if (pass !== null && existingCols.has('pass')) {
+        updates.push('pass = ?');
+        params.push(String(pass).trim() || null);
+      }
+      if (email !== null && existingCols.has('email')) {
+        updates.push('email = ?');
+        params.push(String(email).trim() || null);
+      }
+      if (pass_email !== null && existingCols.has('pass_email')) {
+        updates.push('pass_email = ?');
+        params.push(String(pass_email).trim() || null);
+      }
+      if (mail_ao !== null && existingCols.has('mail_ao')) {
+        updates.push('mail_ao = ?');
+        params.push(String(mail_ao).trim() || null);
+      }
+
       if (updates.length > 0) {
         params.push(existing.id);
         database
@@ -398,6 +457,26 @@ export function importCookiesJsonRecords(database, items) {
         const newProfile = createProfileRecord(database, {
           name,
           cookies: cookieStr,
+          account_id:
+            account_id !== null && account_id !== undefined
+              ? String(account_id).trim() || null
+              : null,
+          pass:
+            pass !== null && pass !== undefined
+              ? String(pass).trim() || null
+              : null,
+          email:
+            email !== null && email !== undefined
+              ? String(email).trim() || null
+              : null,
+          pass_email:
+            pass_email !== null && pass_email !== undefined
+              ? String(pass_email).trim() || null
+              : null,
+          mail_ao:
+            mail_ao !== null && mail_ao !== undefined
+              ? String(mail_ao).trim() || null
+              : null,
           auto_increment_schedule:
             item.auto_increment_schedule !== undefined
               ? item.auto_increment_schedule

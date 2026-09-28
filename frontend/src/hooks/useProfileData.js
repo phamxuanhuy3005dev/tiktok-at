@@ -21,7 +21,12 @@ const isProfileEqual = (a, b) => {
     a.upload_count === b.upload_count &&
     a.last_run === b.last_run &&
     a.is_browser_open === b.is_browser_open &&
-    a.cookies === b.cookies
+    a.cookies === b.cookies &&
+    a.account_id === b.account_id &&
+    a.pass === b.pass &&
+    a.email === b.email &&
+    a.pass_email === b.pass_email &&
+    a.mail_ao === b.mail_ao
   );
 };
 
@@ -87,7 +92,10 @@ export const useProfileData = ({
       list = list.filter(
         (p) =>
           (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.channel_ids && p.channel_ids.toLowerCase().includes(q)),
+          (p.channel_ids && p.channel_ids.toLowerCase().includes(q)) ||
+          (p.account_id && p.account_id.toLowerCase().includes(q)) ||
+          (p.email && p.email.toLowerCase().includes(q)) ||
+          (p.mail_ao && p.mail_ao.toLowerCase().includes(q)),
       );
     }
 
@@ -676,6 +684,32 @@ export const useProfileData = ({
     [fetchData],
   );
 
+  const updateProfileCredentials = useCallback(
+    async (id, credentials) => {
+      setProfiles((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...credentials } : p)),
+      );
+      try {
+        await axios.patch(`/api/profiles/${id}`, credentials);
+        await fetchData();
+        setMessage({
+          type: 'success',
+          text: 'Đã lưu thông tin tài khoản thành công',
+        });
+      } catch (err) {
+        console.error(err);
+        await fetchData();
+        setMessage({
+          type: 'error',
+          text:
+            err.response?.data?.error ||
+            'Không thể cập nhật thông tin tài khoản',
+        });
+      }
+    },
+    [fetchData, setMessage],
+  );
+
   const clearTrash = useCallback(
     async (targetSet) => {
       const target = targetSet || selectedForRun;
@@ -789,6 +823,7 @@ export const useProfileData = ({
     updateProfileAutoIncrementSchedule,
     updateProfileScheduleInterval,
     updateProfileUploadCount,
+    updateProfileCredentials,
     clearTrash,
     clearDebugFiles,
     getStatusColor,

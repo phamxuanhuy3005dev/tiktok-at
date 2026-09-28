@@ -57,6 +57,7 @@ db.exec(`
         pass TEXT,
         email TEXT,
         pass_email TEXT,
+        mail_ao TEXT,
         last_run TEXT,
         group_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -67,8 +68,8 @@ db.exec(`
     );
 `);
 
-// Safe migration: ensure account_id, pass, email, pass_email exist
-const credCols = ['account_id', 'pass', 'email', 'pass_email'];
+// Safe migration: ensure account_id, pass, email, pass_email, mail_ao exist
+const credCols = ['account_id', 'pass', 'email', 'pass_email', 'mail_ao'];
 try {
   const tableInfo = db.prepare('PRAGMA table_info(profiles)').all();
   const existingCols = new Set(tableInfo.map((c) => c.name));

@@ -1,13 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Eye,
+  EyeOff,
   FolderOpen,
   Music,
   Search,
   ShieldCheck,
   Trash2,
+  User,
   Video,
   X,
 } from 'lucide-react';
+import React, { useState } from 'react';
 
 // Modal used to create a new TikTok profile, fully synchronized with EditProfileModal.
 const CreateProfileModal = ({
@@ -30,6 +34,16 @@ const CreateProfileModal = ({
   setNewProfileSetMusic,
   newProfileNeedContentCheck,
   setNewProfileNeedContentCheck,
+  newProfileAccountId,
+  setNewProfileAccountId,
+  newProfilePass,
+  setNewProfilePass,
+  newProfileEmail,
+  setNewProfileEmail,
+  newProfilePassEmail,
+  setNewProfilePassEmail,
+  newProfileMailAo,
+  setNewProfileMailAo,
   groups,
   isCreatingProfile,
   isSelectingFolder,
@@ -38,6 +52,8 @@ const CreateProfileModal = ({
   handleSelectFolderForCreateProfile,
 }) => {
   const busy = isCreatingProfile || isSelectingFolder;
+  const [showPass, setShowPass] = useState(false);
+  const [showPassEmail, setShowPassEmail] = useState(false);
 
   return (
     <AnimatePresence>
@@ -105,6 +121,216 @@ const CreateProfileModal = ({
                   }}
                   disabled={busy}
                 />
+              </div>
+
+              {/* Account Credentials (Optional) */}
+              <div
+                style={{
+                  marginBottom: '20px',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  background: 'var(--surface-2, rgba(255, 255, 255, 0.04))',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div
+                  className="field-title"
+                  style={{
+                    marginBottom: '12px',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <User size={15} color="var(--primary)" />
+                  Thông Tin Tài Khoản (Tùy chọn)
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '10px',
+                  }}
+                >
+                  {/* Account ID / Username */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Account ID / Username
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: user_tiktok_01"
+                      value={newProfileAccountId || ''}
+                      onChange={(e) => setNewProfileAccountId(e.target.value)}
+                      disabled={busy}
+                    />
+                  </div>
+
+                  {/* Password TikTok */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mật khẩu TikTok
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPass ? 'text' : 'password'}
+                        className="input"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '7px 30px 7px 10px',
+                          width: '100%',
+                        }}
+                        placeholder="Mật khẩu TikTok"
+                        value={newProfilePass || ''}
+                        onChange={(e) => setNewProfilePass(e.target.value)}
+                        disabled={busy}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        aria-label="Hiện/ẩn mật khẩu TikTok"
+                      >
+                        {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Email
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: user@hotmail.com"
+                      value={newProfileEmail || ''}
+                      onChange={(e) => setNewProfileEmail(e.target.value)}
+                      disabled={busy}
+                    />
+                  </div>
+
+                  {/* Password Email */}
+                  <div>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mật khẩu Email
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPassEmail ? 'text' : 'password'}
+                        className="input"
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '7px 30px 7px 10px',
+                          width: '100%',
+                        }}
+                        placeholder="Mật khẩu Email"
+                        value={newProfilePassEmail || ''}
+                        onChange={(e) => setNewProfilePassEmail(e.target.value)}
+                        disabled={busy}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassEmail(!showPassEmail)}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        aria-label="Hiện/ẩn mật khẩu Email"
+                      >
+                        {showPassEmail ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mail ảo */}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label
+                      style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        display: 'block',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Mail ảo / Mail phụ
+                    </label>
+                    <input
+                      className="input"
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '7px 10px',
+                        width: '100%',
+                      }}
+                      placeholder="VD: backup_mail@gmail.com"
+                      value={newProfileMailAo || ''}
+                      onChange={(e) => setNewProfileMailAo(e.target.value)}
+                      disabled={busy}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Group */}

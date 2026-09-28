@@ -22,6 +22,11 @@ export const useCreateProfile = ({
   const [newProfileSetMusic, setNewProfileSetMusic] = useState(true);
   const [newProfileNeedContentCheck, setNewProfileNeedContentCheck] =
     useState(false);
+  const [newProfileAccountId, setNewProfileAccountId] = useState('');
+  const [newProfilePass, setNewProfilePass] = useState('');
+  const [newProfileEmail, setNewProfileEmail] = useState('');
+  const [newProfilePassEmail, setNewProfilePassEmail] = useState('');
+  const [newProfileMailAo, setNewProfileMailAo] = useState('');
 
   const resetCreateProfileForm = useCallback(() => {
     setNewProfileName('');
@@ -33,6 +38,11 @@ export const useCreateProfile = ({
     setNewProfileRemoveTitle(true);
     setNewProfileSetMusic(true);
     setNewProfileNeedContentCheck(false);
+    setNewProfileAccountId('');
+    setNewProfilePass('');
+    setNewProfileEmail('');
+    setNewProfilePassEmail('');
+    setNewProfileMailAo('');
   }, []);
 
   const closeCreateProfileModal = useCallback(
@@ -61,6 +71,11 @@ export const useCreateProfile = ({
         remove_title: newProfileRemoveTitle ? 1 : 0,
         set_music: newProfileSetMusic ? 1 : 0,
         need_content_check: newProfileNeedContentCheck ? 1 : 0,
+        account_id: newProfileAccountId.trim() || null,
+        pass: newProfilePass.trim() || null,
+        email: newProfileEmail.trim() || null,
+        pass_email: newProfilePassEmail.trim() || null,
+        mail_ao: newProfileMailAo.trim() || null,
       });
       closeCreateProfileModal({ force: true });
       if (typeof fetchData === 'function') {
@@ -90,6 +105,11 @@ export const useCreateProfile = ({
     newProfileRemoveTitle,
     newProfileSetMusic,
     newProfileNeedContentCheck,
+    newProfileAccountId,
+    newProfilePass,
+    newProfileEmail,
+    newProfilePassEmail,
+    newProfileMailAo,
     closeCreateProfileModal,
     fetchData,
     setMessage,
@@ -117,6 +137,16 @@ export const useCreateProfile = ({
     setNewProfileSetMusic,
     newProfileNeedContentCheck,
     setNewProfileNeedContentCheck,
+    newProfileAccountId,
+    setNewProfileAccountId,
+    newProfilePass,
+    setNewProfilePass,
+    newProfileEmail,
+    setNewProfileEmail,
+    newProfilePassEmail,
+    setNewProfilePassEmail,
+    newProfileMailAo,
+    setNewProfileMailAo,
     resetCreateProfileForm,
     closeCreateProfileModal,
     addProfile,
