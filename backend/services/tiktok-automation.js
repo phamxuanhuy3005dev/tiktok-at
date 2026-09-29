@@ -1047,10 +1047,11 @@ export async function uploadVideo(
       await pausePreviewVideos(page);
 
       // Wait for upload to complete
-      // Cháº¡y dismissPopups liÃªn tá»¥c trong khi Ä‘á»£i Ä‘á»ƒ trÃ¡nh popup block upload
+      // Chạy dismissPopups liên tục trong khi đợi để tránh popup block upload
+      let isUploadCompleted = false;
       try {
         const uploadCompletedPromise = (async () => {
-          // Ä á»£i Cancel button cá»§a upload progress xuáº¥t hiá»‡n trÆ°á»›c
+          // Đợi Cancel button của upload progress xuất hiện trước
           const uploadProgressCancel = page
             .locator(
               '.upload-progress button:has-text("Cancel"), [class*="upload"] button:has-text("Cancel"), button[class*="cancel"]',
@@ -1067,9 +1068,9 @@ export async function uploadVideo(
             /* no specific upload cancel found */
           }
 
-          // Loop dismiss popups má»—i 2s trong khi Ä‘á»£i Post button ready
-          for (let i = 0; i < 600; i++) {
-            // max 20 phÃºt
+          // Loop dismiss popups mỗi 2s trong khi đợi Post button ready (tối đa 3 phút thay vì 20 phút)
+          const MAX_UPLOAD_POLL_LOOPS = 90; // 90 * 2s = 180s (3 phút)
+          for (let i = 0; i < MAX_UPLOAD_POLL_LOOPS; i++) {
             await page.waitForTimeout(2000);
             if (await detectCaptcha(page)) {
               await waitForCaptchaResolution(page, log, profile);
@@ -1078,12 +1079,13 @@ export async function uploadVideo(
             await dismissOnboardingModals(page, log);
             await pausePreviewVideos(page);
 
-            // Kiá»ƒm tra upload xong: Post button enabled vÃ  Cancel cá»§a upload progress biáº¿n máº¥t
+            // Kiểm tra upload xong: Post button enabled và Cancel của upload progress biến mất
             const postBtn = await page.$(
               'button[data-e2e="post_video_button"]:not([disabled]), button.common-button-post-video:not([disabled])',
             );
             if (postBtn && (await postBtn.isVisible())) {
               log('Upload complete (Post button is enabled and visible).');
+              isUploadCompleted = true;
               break;
             }
           }
@@ -1099,6 +1101,23 @@ export async function uploadVideo(
         await takeScreenshot('step1_video_uploaded');
       } catch (e) {
         log(`Wait for upload completion timed out or failed: ${e.message}`);
+      }
+
+      if (!isUploadCompleted) {
+        log(
+          `Upload file ${videoFileName} timed out (quá 3 phút không sẵn sàng). Bỏ qua các bước sau và chuyển sang thử lại...`,
+        );
+        if (videoAttempt < MAX_VIDEO_ATTEMPTS) {
+          log(`Resetting upload page to retry ${videoFileName}...`);
+          await page
+            .goto('https://www.tiktok.com/tiktokstudio/upload', {
+              waitUntil: 'domcontentloaded',
+              timeout: 30000,
+            })
+            .catch(() => null);
+          await page.waitForTimeout(2000);
+        }
+        continue;
       }
 
       // --- TASKS: Clear Title & Add Sound ---
