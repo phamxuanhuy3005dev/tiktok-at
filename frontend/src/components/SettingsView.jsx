@@ -182,7 +182,7 @@ const SettingsView = ({
               <input
                 type="range"
                 min="1"
-                max="10"
+                max="20"
                 style={{ flex: 1, accentColor: 'var(--primary)' }}
                 value={config.maxConcurrency || 2}
                 onChange={(e) =>
